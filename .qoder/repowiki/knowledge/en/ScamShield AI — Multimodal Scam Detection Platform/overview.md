@@ -1,0 +1,1 @@
+Top-level project that wires a FastAPI backend and a vanilla HTML/JS frontend into a single multimodal scam/phishing detection service backed by Alibaba Cloud Qwen LLMs with heuristic fallback.

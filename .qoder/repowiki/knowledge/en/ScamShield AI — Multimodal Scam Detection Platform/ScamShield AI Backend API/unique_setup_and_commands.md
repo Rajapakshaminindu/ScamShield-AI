@@ -1,0 +1,1 @@
+Run with `uvicorn backend.app.main:app --host 0.0.0.0 --port 8000` (or `python -m uvicorn ...`). Requires a `.env` file (copy from `.env.example`) containing `DASHSCOPE_API_KEY`, optionally `DASHSCOPE_BASE_URL`, `QWEN_MODEL_NAME`, `QWEN_VL_MODEL_NAME`, `PORT`, and `HOST`; without a valid key the service still works in heuristic-only fallback mode.

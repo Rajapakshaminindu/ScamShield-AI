@@ -1,0 +1,1 @@
+Run the full app from the workspace root with `python -m uvicorn backend.app.main:app --reload --port 8000` after installing `backend/requirements.txt`; the frontend is accessed at `http://localhost:8000`. Secrets are configured by copying `backend/.env.example` to `.env` and setting `DASHSCOPE_API_KEY`.

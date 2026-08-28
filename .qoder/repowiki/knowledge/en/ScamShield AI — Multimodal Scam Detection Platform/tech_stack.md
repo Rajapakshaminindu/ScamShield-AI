@@ -1,0 +1,1 @@
+Python 3.10+ with FastAPI/Uvicorn/Pydantic on the backend; Alibaba Cloud DashScope Qwen models (`qwen-plus`, `qwen-vl-plus`) as the primary AI engine with a regex-based heuristic fallback; vanilla HTML5/CSS3/JavaScript SPA on the frontend.

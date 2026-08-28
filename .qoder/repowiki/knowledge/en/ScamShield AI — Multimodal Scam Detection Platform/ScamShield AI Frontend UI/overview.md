@@ -1,0 +1,1 @@
+Vanilla HTML/CSS/JS single-page interface that lets users submit text, URLs, screenshots, or voice recordings to a backend API for scam/phishing threat analysis and risk scoring.

@@ -1,0 +1,1 @@
+FastAPI-based multimodal scam detection service that analyzes text, URLs, screenshots, and voice recordings using Alibaba Cloud Qwen LLMs with a regex-based heuristic fallback engine.

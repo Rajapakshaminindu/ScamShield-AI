@@ -1,0 +1,2 @@
+- Environment variables (e.g. `DASHSCOPE_API_KEY`) are loaded from `.env` files and excluded from version control via `.gitignore`.
+- Backend code lives under `backend/` with its own `requirements.txt` and virtual environment, while the frontend is a static SPA served alongside it.

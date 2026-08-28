@@ -1,0 +1,39 @@
+# 知识卡导出索引文件
+schema_version: 1
+locale: en-US
+branch: Q0DeR-MaG1C-BrAnCh-Fo2-NoN-GiT-Or-No-C0MmIt
+nodes_managed: true
+exported_at: "2026-08-28T04:35:57Z"
+modules:
+    "":
+        dir_name: ScamShield AI — Multimodal Scam Detection Platform
+        title: ScamShield AI — Multimodal Scam Detection Platform
+        scope:
+            - README.md
+            - .gitignore
+        source_files: []
+        children:
+            - backend
+            - frontend
+        depends_on: []
+        related_to: []
+    backend:
+        dir_name: ScamShield AI Backend API
+        title: ScamShield AI Backend API
+        scope:
+            - backend/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: frontend
+    frontend:
+        dir_name: ScamShield AI Frontend UI
+        title: ScamShield AI Frontend UI
+        scope:
+            - frontend/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: backend

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScamShield AI — Detect. Explain. Protect.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- Background glow effects -->
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="brand">
+                <div class="brand-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <path d="m9 12 2 2 4-4"/>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h1>ScamShield <span>AI</span></h1>
+                    <p class="tagline">Detect. Explain. Protect.</p>
+                </div>
+            </div>
+            <div class="header-badges">
+                <div class="badge badge-ai">
+                    <span class="pulse-dot"></span> Powered by Alibaba Cloud Qwen
+                </div>
+                <div class="badge badge-status">
+                    <span class="status-indicator"></span> System Active
+                </div>
+            </div>
+        </header>
+
+        <!-- Live Community Threat Radar Ticker -->
+        <div class="threat-ticker" id="threat-ticker">
+            <div class="ticker-label">
+                <span class="pulse-dot"></span> <span class="ticker-live-badge">LIVE ALERT</span>
+            </div>
+            <div class="ticker-track-wrapper">
+                <div class="ticker-track" id="ticker-track">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Workspace Grid -->
+        <main class="main-grid">
+            <!-- Left Column: Input Hub -->
+            <section class="card input-card">
+                <div class="card-header">
+                    <h2>Submit for AI Threat Analysis</h2>
+                    <p>Choose an input mode to scan suspicious content for financial fraud & phishing.</p>
+                </div>
+
+                <!-- Input Tabs -->
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="text-tab">
+                        <span class="tab-icon">✉️</span> Text / SMS
+                    </button>
+                    <button class="tab-btn" data-tab="screenshot-tab">
+                        <span class="tab-icon">🖼️</span> Screenshot
+                    </button>
+                    <button class="tab-btn" data-tab="url-tab">
+                        <span class="tab-icon">🔗</span> URL / Link
+                    </button>
+                    <button class="tab-btn" data-tab="voice-tab">
+                        <span class="tab-icon">🎙️</span> Voice Audio
+                    </button>
+                </div>
+
+                <!-- Tab 1: Text Input -->
+                <div class="tab-content active" id="text-tab">
+                    <label for="text-input">Paste suspicious message, WhatsApp text, or email body:</label>
+                    <textarea id="text-input" placeholder="e.g. Dear user, your bank account is suspended! Update KYC urgently by visiting http://bank-secure.xyz and verify your OTP."></textarea>
+                    
+                    <div class="preset-section">
+                        <span class="preset-label">Quick Demo Presets:</span>
+                        <div class="preset-chips">
+                            <button class="chip" onclick="loadPreset('bank')">🚨 Bank KYC Scam</button>
+                            <button class="chip" onclick="loadPreset('lottery')">🎁 Lottery Winner</button>
+                            <button class="chip" onclick="loadPreset('job')">💼 Part-Time Job Scam</button>
+                            <button class="chip" onclick="loadPreset('safe')">✅ Safe Notification</button>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" id="analyze-text-btn" onclick="submitTextAnalysis()">
+                        <span class="btn-text">Run Threat Analysis</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                    </button>
+                </div>
+
+                <!-- Tab 2: Screenshot Input -->
+                <div class="tab-content" id="screenshot-tab">
+                    <div class="upload-zone" id="image-dropzone" onclick="document.getElementById('screenshot-file').click()">
+                        <input type="file" id="screenshot-file" accept="image/*" style="display:none" onchange="handleImageSelected(event)">
+                        <div class="upload-icon">📸</div>
+                        <p class="upload-title" id="image-upload-title">Click or Drag & Drop screenshot</p>
+                        <p class="upload-subtitle">Supports PNG, JPG, JPEG (SMS, WhatsApp, Email captures)</p>
+                    </div>
+                    <button class="btn btn-primary" id="analyze-screenshot-btn" onclick="submitScreenshotAnalysis()">
+                        <span class="btn-text">Extract OCR & Analyze</span>
+                    </button>
+                </div>
+
+                <!-- Tab 3: URL Input -->
+                <div class="tab-content" id="url-tab">
+                    <label for="url-input">Enter suspicious link or shortened URL:</label>
+                    <input type="url" id="url-input" class="text-field" placeholder="e.g. http://bit.ly/bank-verification-login">
+                    <button class="btn btn-primary" id="analyze-url-btn" onclick="submitUrlAnalysis()">
+                        <span class="btn-text">Inspect Domain & URL</span>
+                    </button>
+                </div>
+
+                <!-- Tab 4: Voice Input -->
+                <div class="tab-content" id="voice-tab">
+                    <div class="upload-zone" id="voice-dropzone" onclick="document.getElementById('voice-file').click()">
+                        <input type="file" id="voice-file" accept="audio/*" style="display:none" onchange="handleVoiceSelected(event)">
+                        <div class="upload-icon">🎙️</div>
+                        <p class="upload-title" id="voice-upload-title">Upload voice recording or audio message</p>
+                        <p class="upload-subtitle">Supports MP3, WAV, M4A, OGG for Voice Phishing (Vishing) scan</p>
+                    </div>
+                    <button class="btn btn-primary" id="analyze-voice-btn" onclick="submitVoiceAnalysis()">
+                        <span class="btn-text">Transcribe & Detect Vishing</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Right Column: Results & Explainable AI -->
+            <section class="card results-card">
+                <!-- Loading State -->
+                <div class="loading-overlay" id="loading-state" style="display: none;">
+                    <div class="radar-spinner"></div>
+                    <h3>Qwen AI Deep Scanning in Progress...</h3>
+                    <p>Extracting intent, matching heuristics & evaluating social engineering tactics</p>
+                </div>
+
+                <!-- Default Empty State: Security Center Overview -->
+                <div class="security-center" id="empty-state">
+                    <!-- Active Protection Banner -->
+                    <div class="protection-banner">
+                        <div class="banner-pulse">
+                            <span class="shield-icon-large">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                    <path d="m9 12 2 2 4-4"/>
+                                </svg>
+                            </span>
+                            <span class="pulse-ring"></span>
+                        </div>
+                        <div class="banner-text">
+                            <h3>Multi-Modal AI Engine Online & Ready</h3>
+                            <p>All detection systems operational. Submit content for instant threat analysis.</p>
+                        </div>
+                    </div>
+
+                    <!-- 3-Step Analysis Process Cards -->
+                    <div class="process-steps">
+                        <div class="step-card">
+                            <div class="step-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                            </div>
+                            <div class="step-number">01</div>
+                            <h4>Smart Extraction</h4>
+                            <p>Accepts text, URLs, screenshots & voice audio. OCR and transcription extract content automatically.</p>
+                        </div>
+                        <div class="step-connector">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.3"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                        </div>
+                        <div class="step-card">
+                            <div class="step-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 0 0-4 4v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2h-2V6a4 4 0 0 0-4-4Z"/><circle cx="12" cy="15" r="1"/></svg>
+                            </div>
+                            <div class="step-number">02</div>
+                            <h4>Heuristic & AI Reasoning</h4>
+                            <p>Regex rule engine + Qwen LLM evaluate urgency, spoofing, credential theft & social engineering.</p>
+                        </div>
+                        <div class="step-connector">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.3"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                        </div>
+                        <div class="step-card">
+                            <div class="step-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/></svg>
+                            </div>
+                            <div class="step-number">03</div>
+                            <h4>Action Guidance</h4>
+                            <p>Risk score, explainable AI insights, Do's & Don'ts, domain breakdown & downloadable incident report.</p>
+                        </div>
+                    </div>
+
+                    <!-- Cyber Safety Tip of the Day -->
+                    <div class="safety-tip-box">
+                        <div class="tip-header">
+                            <span class="tip-badge">TIP OF THE DAY</span>
+                            <button class="tip-next" onclick="rotateTipNext()" aria-label="Next tip">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                            </button>
+                        </div>
+                        <p class="tip-text" id="tip-text"></p>
+                    </div>
+
+                    <!-- Key Metrics Badges -->
+                    <div class="metrics-row">
+                        <div class="metric-badge">
+                            <span class="metric-icon">⚡</span>
+                            <span class="metric-value">&lt;500ms</span>
+                            <span class="metric-label">Avg. Latency</span>
+                        </div>
+                        <div class="metric-badge">
+                            <span class="metric-icon">🎯</span>
+                            <span class="metric-value">99.4%</span>
+                            <span class="metric-label">Pattern Match</span>
+                        </div>
+                        <div class="metric-badge">
+                            <span class="metric-icon">🔒</span>
+                            <span class="metric-value">100%</span>
+                            <span class="metric-label">Privacy Protected</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Real Output State -->
+                <div class="results-content" id="results-content" style="display: none;">
+                    <!-- Top Risk Gauge & Level Header -->
+                    <div class="results-header">
+                        <div class="risk-gauge-container">
+                            <div class="gauge-circle" id="gauge-circle">
+                                <span class="gauge-score" id="gauge-score">92</span>
+                                <span class="gauge-label">/100</span>
+                            </div>
+                        </div>
+                        <div class="risk-meta">
+                            <div class="risk-badge" id="risk-badge">HIGH RISK</div>
+                            <h3 class="scam-title" id="scam-type-title">Bank Impersonation Phishing</h3>
+                            <p class="summary-text" id="summary-text">Deceptive notification impersonating banking credentials.</p>
+                        </div>
+                    </div>
+
+                    <!-- Extracted Text preview if any -->
+                    <div class="extracted-box" id="extracted-box" style="display: none;">
+                        <h4>Extracted Content</h4>
+                        <p id="extracted-text-content"></p>
+                    </div>
+
+                    <!-- Detected Indicators List -->
+                    <div class="section-block">
+                        <h4 class="section-title">
+                            <span class="icon">🔍</span> Detected Threat Indicators
+                        </h4>
+                        <div class="indicator-chips" id="indicators-list"></div>
+                    </div>
+
+                    <!-- Domain Safety Breakdown -->
+                    <div class="section-block domain-breakdown-card" id="domain-breakdown-card" style="display:none">
+                        <h4 class="section-title">
+                            <span class="icon">🛡️</span> Domain Safety Breakdown
+                        </h4>
+                        <div class="domain-visual" id="domain-visual"></div>
+                        <div class="domain-ref" id="domain-ref"></div>
+                    </div>
+
+                    <!-- Explainable AI: Why is this dangerous? -->
+                    <div class="section-block danger-block">
+                        <h4 class="section-title">
+                            <span class="icon">⚠️</span> Why Is This Dangerous? (Explainable AI)
+                        </h4>
+                        <ul class="reason-list" id="explanation-list"></ul>
+                    </div>
+
+                    <!-- Action Checklist: What should you do? -->
+                    <div class="section-block actions-block">
+                        <h4 class="section-title">
+                            <span class="icon">🛡️</span> Recommended Action Plan
+                        </h4>
+                        <div class="actions-grid">
+                            <div class="action-card dos-card">
+                                <h5>✅ What You Should DO:</h5>
+                                <ul id="dos-list"></ul>
+                            </div>
+                            <div class="action-card donts-card">
+                                <h5>❌ What You Must NOT Do:</h5>
+                                <ul id="donts-list"></ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Download Incident Report Button -->
+                    <button class="btn btn-download" id="download-report-btn" onclick="downloadIncidentReport()" style="display:none">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        <span class="btn-text">Download Incident Report</span>
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Recent Scans History Bar -->
+        <section class="card history-bar" id="history-bar">
+            <div class="history-header">
+                <h3>📂 Recent Scans</h3>
+                <button class="btn-clear-history" id="clear-history-btn" onclick="clearHistory()">Clear All</button>
+            </div>
+            <div class="history-scroll" id="history-scroll">
+                <p class="history-empty" id="history-empty">No scans yet. Submit your first analysis above.</p>
+            </div>
+        </section>
+
+        <!-- AI Copilot Chat Section -->
+        <section class="card copilot-card" id="copilot-section" style="display:none">
+            <div class="copilot-header">
+                <div class="copilot-title">
+                    <span class="copilot-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                    </span>
+                    <div>
+                        <h3>Have Questions? Ask ScamShield Copilot</h3>
+                        <p class="copilot-subtitle">Your personal AI cybersecurity advisor — ask anything about the scan result</p>
+                    </div>
+                </div>
+                <button class="copilot-toggle" id="copilot-toggle" onclick="toggleCopilot()" aria-label="Minimize chat">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+            </div>
+
+            <!-- Quick Question Chips -->
+            <div class="copilot-quick" id="copilot-quick">
+                <span class="quick-label">Quick Questions:</span>
+                <div class="quick-chips">
+                    <button class="quick-chip" onclick="askQuickQuestion('What if I already sent my details?')">What if I already sent my details?</button>
+                    <button class="quick-chip" onclick="askQuickQuestion('How did they get my number?')">How did they get my number?</button>
+                    <button class="quick-chip" onclick="askQuickQuestion('Can I reply with a fake name?')">Can I reply with a fake name?</button>
+                    <button class="quick-chip" onclick="askQuickQuestion('How do I report this to cybercrime?')">How do I report this?</button>
+                </div>
+            </div>
+
+            <!-- Chat Messages Area -->
+            <div class="copilot-messages" id="copilot-messages">
+                <div class="chat-bubble bot-bubble" id="copilot-welcome">
+                    <div class="bubble-avatar bot-avatar">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                    <div class="bubble-content">
+                        <p>Hello! I'm your ScamShield Copilot. Run a scan above, then ask me anything about the result — I'll give you clear, step-by-step safety advice.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Typing Indicator -->
+            <div class="copilot-typing" id="copilot-typing" style="display:none">
+                <div class="bubble-avatar bot-avatar">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <div class="typing-bubble">
+                    <div class="typing-dots">
+                        <span></span><span></span><span></span>
+                    </div>
+                    <span class="typing-label">Copilot is typing...</span>
+                </div>
+            </div>
+
+            <!-- Chat Input -->
+            <div class="copilot-input-row">
+                <input type="text" class="copilot-input" id="copilot-input" placeholder="Type your question here..." autocomplete="off" />
+                <button class="copilot-send" id="copilot-send" onclick="sendChatMessage()" aria-label="Send message">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </button>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>ScamShield AI Platform • Built for AI Competition • Powered by Alibaba Cloud Model Studio (Qwen)</p>
+        </footer>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

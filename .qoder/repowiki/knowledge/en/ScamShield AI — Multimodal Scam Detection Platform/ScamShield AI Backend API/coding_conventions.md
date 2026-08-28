@@ -1,0 +1,6 @@
+- All external configuration is read from environment variables via `os.getenv` with defaults in `config.py`, never hard-coded.
+- API request and response shapes are defined as Pydantic `BaseModel`s in `schemas.py` and reused across handlers and AI response parsing.
+- Each analysis endpoint validates input early and raises `HTTPException(status_code=400)` for empty payloads before delegating to `ai_service`.
+- LLM calls use a shared `SYSTEM_PROMPT` enforcing a strict JSON schema and `response_format={'type': 'json_object'}`, then parse the result into a `ScamAnalysisResponse` model.
+- Every AI path wraps its call in try/except and falls back to `generate_fallback_analysis`, which reuses the deterministic rule engine so the service remains usable without an API key.
+- Heuristic scoring accumulates weighted points per matched pattern category and is capped at 100 via `min(100, base_score)` before being returned.

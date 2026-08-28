@@ -1,0 +1,1 @@
+Plain HTML5 + CSS3 (CSS custom properties, Grid, backdrop-filter) + vanilla ES6 JavaScript; fonts loaded from Google Fonts (Outfit, JetBrains Mono); relies on Alibaba Cloud Qwen model as indicated in the header badge.

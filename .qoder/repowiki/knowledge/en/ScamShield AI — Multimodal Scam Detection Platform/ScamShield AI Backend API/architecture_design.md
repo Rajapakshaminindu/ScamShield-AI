@@ -1,0 +1,7 @@
+The module is organized as a flat FastAPI application under `app/` with clear separation of concerns:
+- `main.py` defines the FastAPI app, mounts CORS middleware, exposes REST endpoints (`/api/analyze/{text,url,screenshot,voice}`), serves the frontend static files from the repo root, and boots via uvicorn.
+- `schemas.py` declares Pydantic v2 request/response models (`TextAnalysisRequest`, `URLAnalysisRequest`, `DetectedIndicator`, `ScamAnalysisResponse`) that enforce validation and auto-generate OpenAPI docs.
+- `config.py` centralizes environment-driven configuration loaded via `python-dotenv`, exposing DashScope API credentials, model names, and server host/port.
+- `rule_engine.py` implements deterministic heuristics: regex pattern sets for sensitive data, urgency/fear tactics, lure patterns, plus URL shortener/TLD/IP checks; it returns a weighted score (0–100) and `DetectedIndicator` list.
+- `ai_service.py` is the orchestration layer: it builds an OpenAI-compatible client pointing at Alibaba Cloud DashScope, calls Qwen/Qwen-VL with a strict JSON system prompt, and falls back to `generate_fallback_analysis()` (which reuses the rule engine) when no API key is configured or the LLM call fails. Image/audio endpoints currently simulate OCR/transcription and route through the same heuristic fallback.
+Dependency direction is one-way: `main.py` → `ai_service.py` → (`rule_engine.py`, `schemas.py`, `config.py`); `rule_engine.py` depends only on `schemas.py`. There is no database layer — stateless analysis per request.

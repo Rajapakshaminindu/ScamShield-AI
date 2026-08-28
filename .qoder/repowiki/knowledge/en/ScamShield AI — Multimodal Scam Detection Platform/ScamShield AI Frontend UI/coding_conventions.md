@@ -1,0 +1,5 @@
+- Each input mode has a dedicated async submission function that wraps a `fetch` call with a shared `showLoading(true/false)` toggle around try/catch/finally blocks.
+- Backend responses are rendered through a single `displayResults(data)` function that maps response fields to specific DOM element IDs (e.g., `gauge-score`, `risk-badge`, `indicators-list`, `explanation-list`, `dos-list`, `donts-list`).
+- Tabbed sections are controlled by `data-tab` attributes on buttons and `.active` class toggling on both `.tab-btn` and `.tab-content` elements.
+- Styling uses CSS custom properties defined in `:root` (colors, radii, fonts) rather than hardcoded values, keeping the dark theme consistent across components.
+- File uploads use `FormData` appended as `file` and are sent via `multipart/form-data` without an explicit `Content-Type` header, letting the browser set it.

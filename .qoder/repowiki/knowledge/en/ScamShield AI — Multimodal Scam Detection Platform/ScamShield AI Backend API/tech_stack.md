@@ -1,0 +1,1 @@
+FastAPI + Uvicorn ASGI server, Pydantic v2 for schema validation, OpenAI Python SDK configured against Alibaba Cloud DashScope (Qwen-plus for text, Qwen-VL-plus for images), python-dotenv for config, and python-multipart for file uploads.

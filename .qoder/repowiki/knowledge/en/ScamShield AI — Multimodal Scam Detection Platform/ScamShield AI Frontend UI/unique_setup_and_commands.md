@@ -1,0 +1,1 @@
+No build or install step — serve the `frontend/` directory as static files so that `/static/app.js` and `/static/style.css` resolve correctly, and ensure a backend is reachable at `/api/analyze/*` endpoints.
