@@ -265,6 +265,46 @@ def analyze_audio_bytes(audio_bytes: bytes, filename: str) -> ScamAnalysisRespon
     res.extracted_text = f"[Voice-to-Text Transcription of {filename}]:\n\"{sample_transcription}\""
     return res
 
+
+# ---------------------------------------------------------------------------
+# COPILOT SYSTEM PROMPTS
+# ---------------------------------------------------------------------------
+COPILOT_SYSTEM = (
+    "You are ScamShield Copilot \u2014 a brilliant, empathetic cybersecurity advisor and general knowledge assistant.\n"
+    "You are the intelligent chatbot embedded inside the ScamShield AI scam-detection platform.\n\n"
+    "## Core Identity:\n"
+    "- You are warm, supportive, and speak like a knowledgeable friend \u2014 never robotic or condescending.\n"
+    "- You NEVER say 'I am an AI' or 'as an AI'. You are a human advisor.\n\n"
+    "## What You Can Do:\n"
+    "1. **Scam Analysis** (PRIMARY): Analyze scanned content, explain threats, give step-by-step safety advice.\n"
+    "2. **Cybersecurity Guidance**: Passwords, 2FA, malware, phishing, social engineering, data breaches, online safety.\n"
+    "3. **Financial Safety**: Bank fraud, UPI scams, credit card theft, investment scams, money recovery steps.\n"
+    "4. **Digital Literacy**: How the internet works, safe browsing, privacy settings, social media safety.\n"
+    "5. **Legal & Reporting**: How to file cybercrime complaints, consumer rights, legal options.\n"
+    "6. **General Knowledge**: You can answer ANY question the user asks \u2014 history, science, technology, daily life, etc.\n"
+    "   You are a helpful assistant first; cybersecurity is your specialty, not your limit.\n\n"
+    "## Response Format:\n"
+    "- Address the user's specific concern FIRST, acknowledging their emotion or situation.\n"
+    "- Use **bold** for key actions and important terms.\n"
+    "- Use bullet points (\u2022) for lists, numbered steps for sequences.\n"
+    "- Keep responses concise: 4-8 sentences for simple questions, up to 12 for complex ones.\n"
+    "- Always end with one clear, empowering next action.\n"
+    "- If panicked, start with calming reassurance before giving steps.\n"
+    "- Keep explanations simple, jargon-free, and practical. Use analogies when helpful.\n\n"
+    "## Important Rules:\n"
+    "- If scan context is provided, reference the specific scan results in your answer.\n"
+    "- If NO scan context, answer based on general knowledge \u2014 you don't need a scan to help.\n"
+    "- For medical, legal, or financial emergencies, always advise consulting a professional.\n"
+    "- Never provide instructions for illegal or harmful activities.\n"
+    "- Be concise but thorough. Every response should be actionable.\n"
+)
+
+COPILOT_SCAN_HINT = (
+    "The user just scanned content with ScamShield. Here is the scan context \u2014 "
+    "reference these results in your answers:\n{context}"
+)
+
+
 def chat_followup(message: str, scan_context: str, chat_history: list) -> ChatFollowupResponse:
     """
     Conversational follow-up endpoint.
@@ -272,23 +312,6 @@ def chat_followup(message: str, scan_context: str, chat_history: list) -> ChatFo
     Uses Qwen LLM if available, otherwise returns intelligent heuristic responses.
     """
     client = get_ai_client()
-
-    COPILOT_SYSTEM = (
-        "You are ScamShield Copilot — an empathetic, world-class cybersecurity advisor. "
-        "Talk like a supportive human expert (similar to ChatGPT or Gemini). "
-        "Your tone is warm, reassuring, and calm — never condescending or robotic.\n\n"
-        "Guidelines:\n"
-        "- Address the user's specific scenario directly FIRST, acknowledging their concern or emotion.\n"
-        "- Keep explanations simple, jargon-free, and practical. Use analogies when helpful.\n"
-        "- Structure advice with **bold key actions** and numbered steps for clarity.\n"
-        "- If the user seems panicked, start with a calming reassurance before giving steps.\n"
-        "- Always end with one clear, empowering next action the user can take right now.\n"
-        "- Use bullet points (•) for lists. Bold the most critical words.\n"
-        "- Keep responses concise: 4-8 sentences for simple questions, up to 12 for complex ones.\n"
-        "- Never say 'I am an AI' or 'as an AI'. You are a human cybersecurity advisor.\n"
-        "- If a question is outside cybersecurity, politely redirect: explain you specialize in "
-        "online safety and scam protection, then offer to help with any related concern."
-    )
 
     if client:
         try:
@@ -299,7 +322,7 @@ def chat_followup(message: str, scan_context: str, chat_history: list) -> ChatFo
             if scan_context.strip():
                 messages.append({
                     "role": "system",
-                    "content": f"The user just scanned the following content and received an analysis.\nScan Context: {scan_context}"
+                    "content": COPILOT_SCAN_HINT.replace("{context}", scan_context)
                 })
 
             # Append chat history
@@ -311,7 +334,9 @@ def chat_followup(message: str, scan_context: str, chat_history: list) -> ChatFo
 
             response = client.chat.completions.create(
                 model=QWEN_MODEL_NAME,
-                messages=messages
+                messages=messages,
+                temperature=0.7,
+                max_tokens=1024,
             )
             reply_text = response.choices[0].message.content.strip()
             return ChatFollowupResponse(reply=reply_text)
@@ -368,6 +393,29 @@ def _generate_copilot_fallback(message: str, scan_context: str) -> str:
                      "prevent messages", "unsubscribe"]
     _INTENT_PREVENT = ["how to stay safe", "protect myself", "prevent",
                        "avoid scams", "be safe", "safety tips", "future"]
+    _INTENT_PASSWORD = ["strong password", "create password", "password tips",
+                        "secure password", "good password", "password manager",
+                        "make a password", "choose password", "set password"]
+    _INTENT_2FA = ["two-factor", "2fa", "two factor", "two step", "2 step",
+                   "two-step", "multi-factor", "mfa", "authenticator",
+                   "verification code", "second factor", "double verification"]
+    _INTENT_COMMON_SCAMS = ["common scams", "types of scams", "scam types",
+                            "popular scams", "latest scams", "new scams",
+                            "trending scams", "scam trends", "what scams",
+                            "kinds of scams", "scam examples"]
+    _INTENT_PHISHING = ["phishing", "phishing email", "phishing attack",
+                        "spear phishing", "smishing", "vishing", "phish"]
+    _INTENT_SOCIAL_MEDIA = ["facebook", "instagram", "twitter", "whatsapp",
+                            "telegram", "social media", "tiktok", "snapchat",
+                            "linkedin", "social account", "messenger"]
+    _INTENT_UPI = ["upi", "google pay", "gpay", "phonepe", "paytm",
+                   "bhim", "upi pin", "upi payment", "qr code payment",
+                   "scan and pay", "upi scam"]
+    _INTENT_BANK = ["bank account", "bank fraud", "atm", "debit card",
+                    "credit card", "net banking", "banking", "ifsc",
+                    "neft", "rtgs", "bank transfer", "wire transfer"]
+    _INTENT_GREETING = ["hello", "hi there", "hey", "good morning",
+                        "good afternoon", "good evening", "howdy"]
 
     def _match(keywords):
         return any(kw in msg for kw in keywords)
@@ -518,6 +566,26 @@ def _generate_copilot_fallback(message: str, scan_context: str) -> str:
             "You've already taken the smartest step by scanning this message. Stay calm and follow this plan."
         )
 
+    # ==================== INTENT: PASSWORD CREATION ====================
+    if _match(_INTENT_PASSWORD):
+        return (
+            "A strong password is your **first line of defense** against hackers. Here's how to create one:\n\n"
+            "**Rules for a strong password:**\n"
+            "\u2022 At least **12 characters** long (longer is better)\n"
+            "\u2022 Mix **uppercase, lowercase, numbers, and symbols**\n"
+            "\u2022 **Never use** personal info (name, birthday, phone number)\n"
+            "\u2022 **Never reuse** the same password across different accounts\n\n"
+            "**Best method \u2014 use a passphrase:**\n"
+            "Pick 4 random words and combine them: `Purple-Tiger-Dancing-Moon!2026`\n"
+            "This is long, memorable, and extremely hard to crack.\n\n"
+            "**Use a password manager:**\n"
+            "\u2022 **Bitwarden** (free and open-source) \u2014 highly recommended\n"
+            "\u2022 **Google Password Manager** (built into Chrome/Android)\n"
+            "\u2022 **Apple Keychain** (built into iPhone/Mac)\n\n"
+            "A password manager remembers all your passwords for you \u2014 you only need to remember one master password. "
+            "This alone will protect 90% of your accounts."
+        )
+
     # ==================== INTENT: OTP / PASSWORD ====================
     if _match(_INTENT_OTP):
         return (
@@ -572,21 +640,149 @@ def _generate_copilot_fallback(message: str, scan_context: str) -> str:
     # ==================== INTENT: PREVENTION / STAY SAFE ====================
     if _match(_INTENT_PREVENT):
         return (
-            "Great mindset — prevention is always better than damage control! "
+            "Great mindset \u2014 prevention is always better than damage control! "
             "Here are the **essential habits** that will keep you safe:\n\n"
             "**Daily habits:**\n"
-            "• **Never click links** in unsolicited messages — go directly to the official website or app\n"
-            "• **Never share OTPs, passwords, or PINs** with anyone, ever\n"
-            "• Verify sender identity through **known official channels** before sharing anything\n\n"
+            "\u2022 **Never click links** in unsolicited messages \u2014 go directly to the official website or app\n"
+            "\u2022 **Never share OTPs, passwords, or PINs** with anyone, ever\n"
+            "\u2022 Verify sender identity through **known official channels** before sharing anything\n\n"
             "**Account security:**\n"
-            "• Use **strong, unique passwords** for each account (try a password manager)\n"
-            "• Enable **two-factor authentication (2FA)** everywhere possible\n"
-            "• Set up **transaction alerts** via SMS/email on all banking accounts\n\n"
+            "\u2022 Use **strong, unique passwords** for each account (try a password manager)\n"
+            "\u2022 Enable **two-factor authentication (2FA)** everywhere possible\n"
+            "\u2022 Set up **transaction alerts** via SMS/email on all banking accounts\n\n"
             "**Device security:**\n"
-            "• Keep your **phone and apps updated** — updates patch security holes\n"
-            "• Only install apps from **Google Play Store or Apple App Store**\n"
-            "• Use **Google Play Protect** or equivalent malware scanning\n\n"
+            "\u2022 Keep your **phone and apps updated** \u2014 updates patch security holes\n"
+            "\u2022 Only install apps from **Google Play Store or Apple App Store**\n"
+            "\u2022 Use **Google Play Protect** or equivalent malware scanning\n\n"
             "**When in doubt, scan it:** You can always paste suspicious messages into ScamShield for a free instant analysis."
+        )
+    
+    # ==================== INTENT: TWO-FACTOR AUTHENTICATION ====================
+    if _match(_INTENT_2FA):
+        return (
+            "**Two-Factor Authentication (2FA)** is like adding a **second lock** to your accounts. "
+            "Even if someone steals your password, they still can't get in without the second factor.\n\n"
+            "**How 2FA works:**\n"
+            "1. You enter your **password** (something you know)\n"
+            "2. You enter a **code** from your phone (something you have)\n\n"
+            "**Types of 2FA (from best to worst):**\n"
+            "\u2022 **Authenticator apps** (Google Authenticator, Microsoft Authenticator, Authy) \u2014 **most secure**\n"
+            "\u2022 **Hardware security keys** (YubiKey) \u2014 used by high-value targets\n"
+            "\u2022 **SMS codes** \u2014 convenient but vulnerable to SIM-swapping attacks\n\n"
+            "**Where to enable 2FA right now:**\n"
+            "\u2022 **Google Account** \u2192 Security \u2192 2-Step Verification\n"
+            "\u2022 **Banking apps** \u2192 Settings \u2192 Enable 2FA\n"
+            "\u2022 **WhatsApp** \u2192 Settings \u2192 Account \u2192 Two-Step Verification\n"
+            "\u2022 **Instagram/Facebook** \u2192 Settings \u2192 Security \u2192 2FA\n\n"
+            "**Pro tip:** Download **Google Authenticator** today and enable 2FA on your email and banking accounts first \u2014 "
+            "these are the most critical accounts to protect."
+        )
+    
+    # ==================== INTENT: COMMON SCAM TYPES ====================
+    if _match(_INTENT_COMMON_SCAMS):
+        return (
+            "Here are the **most common scam types** you should watch out for:\n\n"
+            "**1. Phishing & Smishing** \u2014 Fake emails/SMS pretending to be your bank, asking you to click links or share OTPs.\n"
+            "**2. Job/Task Scams** \u2014 'Earn \u20b95,000/day from home!' on Telegram/WhatsApp. They ask for a deposit first.\n"
+            "**3. Investment Scams** \u2014 Fake crypto/trading platforms promising guaranteed returns.\n"
+            "**4. Lottery/Prize Scams** \u2014 'You won \u20b925 lakhs!' but you must pay a processing fee first.\n"
+            "**5. Sextortion** \u2014 Threatening to release fake compromising videos unless you pay.\n"
+            "**6. Tech Support Scams** \u2014 'Your computer has a virus!' \u2014 they install malware or steal data.\n"
+            "**7. Fake Delivery/Courier** \u2014 'Your parcel is held at customs, pay \u20b9150 duty' via a phishing link.\n"
+            "**8. QR Code Scams** \u2014 Fake QR codes on posters or sent via messages that steal UPI money.\n\n"
+            "**Golden rules to spot ANY scam:**\n"
+            "\u2022 If it creates **urgency** ('act now or lose everything') \u2014 it's a scam\n"
+            "\u2022 If it asks for **money upfront** to claim a prize \u2014 it's a scam\n"
+            "\u2022 If it asks for **OTP, password, or PIN** \u2014 it's ALWAYS a scam\n"
+            "\u2022 If it sounds **too good to be true** \u2014 it is\n\n"
+            "Paste any suspicious message into ScamShield above and I'll analyze it for you instantly!"
+        )
+    
+    # ==================== INTENT: PHISHING EXPLAINED ====================
+    if _match(_INTENT_PHISHING):
+        return (
+            "**Phishing** is when scammers pretend to be a trusted organization (your bank, Google, Amazon, etc.) "
+            "to trick you into revealing personal information.\n\n"
+            "**Types of phishing:**\n"
+            "\u2022 **Email phishing** \u2014 Fake emails with links to fake login pages\n"
+            "\u2022 **Smishing** \u2014 Phishing via SMS/text messages\n"
+            "\u2022 **Vishing** \u2014 Voice phishing via phone calls\n"
+            "\u2022 **Spear phishing** \u2014 Highly targeted attacks using your real name/info\n\n"
+            "**How to spot phishing:**\n"
+            "\u2022 Check the **sender email address** carefully (e.g., `support@amazon-security.xyz` is NOT Amazon)\n"
+            "\u2022 Hover over links to see the **real URL** before clicking\n"
+            "\u2022 Look for **urgency language** ('your account will be suspended')\n"
+            "\u2022 Real companies **never** ask for passwords or OTPs via email\n\n"
+            "If you receive a suspicious message, **paste it into ScamShield** above and I'll analyze it for phishing indicators instantly!"
+        )
+    
+    # ==================== INTENT: SOCIAL MEDIA SAFETY ====================
+    if _match(_INTENT_SOCIAL_MEDIA):
+        return (
+            "Social media accounts are prime targets for scammers. Here's how to **lock them down**:\n\n"
+            "**Essential settings:**\n"
+            "\u2022 Set your profile to **private** (only friends can see your posts)\n"
+            "\u2022 Enable **two-factor authentication (2FA)** on every social account\n"
+            "\u2022 **Don't share** your phone number or email publicly on your profile\n"
+            "\u2022 Review and **revoke third-party app permissions** you don't use\n\n"
+            "**Common social media scams:**\n"
+            "\u2022 **Fake friend requests** from cloned accounts of people you know\n"
+            "\u2022 **'Is this you in this video?'** links that steal your login\n"
+            "\u2022 **Romance scams** \u2014 building fake relationships to ask for money\n"
+            "\u2022 **Fake giveaways** asking you to share personal info to 'win'\n\n"
+            "**Red flags:** If a friend suddenly messages asking for money or sends a suspicious link, "
+            "**call them directly** to verify \u2014 their account may be hacked."
+        )
+    
+    # ==================== INTENT: UPI SAFETY ====================
+    if _match(_INTENT_UPI):
+        return (
+            "**UPI is one of the most targeted payment systems** for scams. Here's what you need to know:\n\n"
+            "**UPI scam tactics:**\n"
+            "\u2022 **Fake QR codes** \u2014 scammers send QR codes saying 'scan to receive money' but it actually **sends** money from your account\n"
+            "\u2022 **'Collect request' fraud** \u2014 they send a UPI collect request that looks like a payment to you\n"
+            "\u2022 **Screen sharing apps** \u2014 they ask you to install AnyDesk/QuickSupport to 'help' and steal your UPI PIN\n\n"
+            "**Golden UPI rules:**\n"
+            "\u2022 **NEVER scan a QR code to RECEIVE money** \u2014 UPI only sends money when you scan (receiving is automatic)\n"
+            "\u2022 **NEVER enter your UPI PIN to receive money** \u2014 PIN is ONLY for sending\n"
+            "\u2022 **Set a UPI transaction limit** in your app (e.g., \u20b95,000/day)\n"
+            "\u2022 **Always verify** the payee name before confirming any payment\n\n"
+            "If money was stolen via UPI, call your bank immediately and also **call 1930** (National Cybercrime Helpline) "
+            "within the golden hour for the best chance of recovery."
+        )
+    
+    # ==================== INTENT: BANKING SAFETY ====================
+    if _match(_INTENT_BANK):
+        return (
+            "Bank fraud is one of the most damaging types of scams. Here's how to **protect your finances**:\n\n"
+            "**Key facts about banks:**\n"
+            "\u2022 Your bank will **NEVER** call, SMS, or email asking for your **OTP, PIN, CVV, or password**\n"
+            "\u2022 Your bank will **NEVER** ask you to **transfer money to a 'safe account'**\n"
+            "\u2022 Your bank will **NEVER** ask you to **install remote access software**\n\n"
+            "**Protect your accounts:**\n"
+            "\u2022 Enable **SMS and email alerts** for every transaction\n"
+            "\u2022 Set **daily transaction limits** on your debit/credit cards\n"
+            "\u2022 Use your bank's **official mobile app** \u2014 never use links from messages\n"
+            "\u2022 **Check your bank statements** regularly for unknown transactions\n\n"
+            "**If your bank account is compromised:**\n"
+            "1. **Call your bank immediately** using the number on the back of your card\n"
+            "2. Ask them to **freeze your account** and **block your cards**\n"
+            "3. **Change your net banking password** from a different device\n"
+            "4. File a complaint at **cybercrime.gov.in** or call **1930**"
+        )
+    
+    # ==================== INTENT: GREETING ====================
+    if _match(_INTENT_GREETING):
+        return (
+            "Hello! I'm your **ScamShield Copilot** \u2014 your personal cybersecurity advisor. "
+            "I'm here to help you stay safe from scams and online threats.\n\n"
+            "**Here's what I can help with:**\n"
+            "\u2022 Analyze suspicious messages, links, or screenshots\n"
+            "\u2022 Guide you on what to do if you've been scammed\n"
+            "\u2022 Teach you how to create strong passwords and enable 2FA\n"
+            "\u2022 Explain common scam types and how to spot them\n"
+            "\u2022 Help you report cybercrime\n\n"
+            "Just type your question or paste a suspicious message into the scanner above, and I'll help you out!"
         )
 
     # ==================== DEFAULT: CONTEXT-AWARE OR GENERIC ====================
@@ -606,17 +802,17 @@ def _generate_copilot_fallback(message: str, scan_context: str) -> str:
         )
 
     return (
-        "Hi there! I'm **ScamShield Copilot** — your personal cybersecurity advisor. "
-        "I'm here to help you understand and respond to any scam or suspicious message.\n\n"
-        "**Here's how I can help:**\n"
-        "• Run a **scan** using the tools above (Text, URL, Screenshot, or Voice)\n"
-        "• Then ask me **anything** about the result\n\n"
-        "**Try asking me things like:**\n"
-        "• 'Is my phone hacked?'\n"
-        "• 'What if I already clicked the link?'\n"
-        "• 'They took my money, what do I do?'\n"
-        "• 'How do I protect my parents from scams?'\n"
-        "• 'How do I report this to cybercrime?'\n\n"
-        "I'll give you clear, step-by-step guidance — no technical jargon, just practical advice you can act on right away."
+        "That's an interesting question! While I specialize in **cybersecurity and scam protection**, "
+        "I can help you with a wide range of topics.\n\n"
+        "**Here are some things I can help with right now:**\n"
+        "\u2022 \"What are the most common scams?\" \u2014 learn about current scam trends\n"
+        "\u2022 \"How do I create a strong password?\" \u2014 account security tips\n"
+        "\u2022 \"What is two-factor authentication?\" \u2014 security best practices\n"
+        "\u2022 \"How do I report cybercrime?\" \u2014 step-by-step reporting guide\n"
+        "\u2022 \"How can I protect my parents from scams?\" \u2014 family safety advice\n\n"
+        "You can also **paste any suspicious message** into the scanner above for instant AI analysis, "
+        "then ask me follow-up questions about the results.\n\n"
+        "**To unlock my full AI-powered responses**, connect a DashScope API key in the backend settings \u2014 "
+        "then I can answer literally any question with deep knowledge!"
     )
 

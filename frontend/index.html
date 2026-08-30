@@ -30,12 +30,24 @@
                 </div>
             </div>
             <div class="header-badges">
-                <div class="badge badge-ai">
-                    <span class="pulse-dot"></span> Powered by Alibaba Cloud Qwen
-                </div>
-                <div class="badge badge-status">
-                    <span class="status-indicator"></span> System Active
-                </div>
+                <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+                    <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"/>
+                        <line x1="12" y1="1" x2="12" y2="3"/>
+                        <line x1="12" y1="21" x2="12" y2="23"/>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                        <line x1="1" y1="12" x2="3" y2="12"/>
+                        <line x1="21" y1="12" x2="23" y2="12"/>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                    </svg>
+                    <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+                <!-- User Menu (populated by JS) -->
+                <div class="user-menu" id="user-menu"></div>
             </div>
         </header>
 
@@ -56,7 +68,16 @@
             <!-- Left Column: Input Hub -->
             <section class="card input-card">
                 <div class="card-header">
-                    <h2>Submit for AI Threat Analysis</h2>
+                    <div class="card-header-row">
+                        <h2>Submit for AI Threat Analysis</h2>
+                        <button class="btn-refresh" id="refresh-input-btn" onclick="clearActiveInput()" title="Clear all inputs">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="1 4 1 10 7 10"/>
+                                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                            </svg>
+                            <span>Clear</span>
+                        </button>
+                    </div>
                     <p>Choose an input mode to scan suspicious content for financial fraud & phishing.</p>
                 </div>
 
@@ -311,8 +332,8 @@
             </div>
         </section>
 
-        <!-- AI Copilot Chat Section -->
-        <section class="card copilot-card" id="copilot-section" style="display:none">
+        <!-- AI Copilot Chat Section (always visible) -->
+        <section class="card copilot-card" id="copilot-section">
             <div class="copilot-header">
                 <div class="copilot-title">
                     <span class="copilot-icon">
@@ -321,8 +342,8 @@
                         </svg>
                     </span>
                     <div>
-                        <h3>Have Questions? Ask ScamShield Copilot</h3>
-                        <p class="copilot-subtitle">Your personal AI cybersecurity advisor — ask anything about the scan result</p>
+                        <h3>ScamShield AI Copilot</h3>
+                        <p class="copilot-subtitle">Your personal AI advisor — ask anything about scams, cybersecurity, or any topic</p>
                     </div>
                 </div>
                 <button class="copilot-toggle" id="copilot-toggle" onclick="toggleCopilot()" aria-label="Minimize chat">
@@ -332,12 +353,14 @@
 
             <!-- Quick Question Chips -->
             <div class="copilot-quick" id="copilot-quick">
-                <span class="quick-label">Quick Questions:</span>
+                <span class="quick-label">Try asking:</span>
                 <div class="quick-chips">
-                    <button class="quick-chip" onclick="askQuickQuestion('What if I already sent my details?')">What if I already sent my details?</button>
-                    <button class="quick-chip" onclick="askQuickQuestion('How did they get my number?')">How did they get my number?</button>
-                    <button class="quick-chip" onclick="askQuickQuestion('Can I reply with a fake name?')">Can I reply with a fake name?</button>
-                    <button class="quick-chip" onclick="askQuickQuestion('How do I report this to cybercrime?')">How do I report this?</button>
+                    <button class="quick-chip" onclick="askQuickQuestion('What are the most common scams in 2026?')">Common scams in 2026</button>
+                    <button class="quick-chip" onclick="askQuickQuestion('How do I create a strong password?')">Strong password tips</button>
+                    <button class="quick-chip" onclick="askQuickQuestion('What should I do if I already clicked a suspicious link?')">Clicked a suspicious link</button>
+                    <button class="quick-chip" onclick="askQuickQuestion('How do I report cybercrime?')">Report cybercrime</button>
+                    <button class="quick-chip" onclick="askQuickQuestion('What is two-factor authentication and how to set it up?')">What is 2FA?</button>
+                    <button class="quick-chip" onclick="askQuickQuestion('How can I protect my elderly parents from phone scams?')">Protect elderly parents</button>
                 </div>
             </div>
 
@@ -348,7 +371,14 @@
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                     </div>
                     <div class="bubble-content">
-                        <p>Hello! I'm your ScamShield Copilot. Run a scan above, then ask me anything about the result — I'll give you clear, step-by-step safety advice.</p>
+                        <p>Hello! I'm your <strong>ScamShield Copilot</strong> — your personal AI advisor. I can help you with:</p>
+                        <ul class="bubble-list">
+                            <li>Analyzing scams and explaining threats</li>
+                            <li>Cybersecurity tips and best practices</li>
+                            <li>Steps to take if you've been scammed</li>
+                            <li>General questions about technology and online safety</li>
+                        </ul>
+                        <p>Ask me anything, or run a scan above for a detailed threat analysis!</p>
                     </div>
                 </div>
             </div>

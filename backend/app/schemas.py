@@ -43,3 +43,54 @@ class ChatFollowupRequest(BaseModel):
 
 class ChatFollowupResponse(BaseModel):
     reply: str = Field(..., description="The AI copilot's response")
+
+
+# ---------------------------------------------------------------------------
+# Authentication schemas
+# ---------------------------------------------------------------------------
+
+class RegisterRequest(BaseModel):
+    username: str = Field(..., min_length=3, max_length=30, description="Username (3-30 chars)")
+    email: str = Field(..., description="Email address")
+    password: str = Field(..., min_length=6, description="Password (min 6 chars)")
+
+
+class LoginRequest(BaseModel):
+    username: str = Field(..., description="Username or email")
+    password: str = Field(..., description="Password")
+
+
+class TokenResponse(BaseModel):
+    token: str
+    username: str
+    role: str
+    user_id: int
+
+
+class UserInfo(BaseModel):
+    id: int
+    username: str
+    email: str
+    role: str
+    created_at: str
+
+
+class ScanLogEntry(BaseModel):
+    id: int
+    user_id: Optional[int] = None
+    username: Optional[str] = None
+    input_type: str
+    risk_score: int
+    risk_level: str
+    scam_type: Optional[str] = None
+    summary: str
+    created_at: str
+
+
+class AdminStatsResponse(BaseModel):
+    total_users: int
+    regular_users: int
+    total_scans: int
+    high_risk_scans: int
+    avg_risk_score: float
+    active_users: int

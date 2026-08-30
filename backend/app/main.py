@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from typing import Optional
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -10,7 +11,13 @@ from backend.app.schemas import (
     URLAnalysisRequest,
     ScamAnalysisResponse,
     ChatFollowupRequest,
-    ChatFollowupResponse
+    ChatFollowupResponse,
+    RegisterRequest,
+    LoginRequest,
+    TokenResponse,
+    UserInfo,
+    ScanLogEntry,
+    AdminStatsResponse,
 )
 from backend.app.ai_service import (
     analyze_text,
@@ -20,6 +27,19 @@ from backend.app.ai_service import (
     chat_followup
 )
 from backend.app.config import PORT, HOST
+from backend.app.auth import (
+    create_token,
+    create_user,
+    authenticate_user,
+    get_current_user,
+    require_admin,
+    get_all_users,
+    delete_user,
+    log_scan,
+    get_all_scan_logs,
+    get_user_scan_logs,
+    get_admin_stats,
+)
 
 app = FastAPI(
     title="ScamShield AI API",
@@ -44,37 +64,135 @@ def health_check():
         "version": "1.0.0"
     }
 
+# ---------------------------------------------------------------------------
+# Authentication Endpoints
+# ---------------------------------------------------------------------------
+
+@app.post("/api/auth/register", response_model=TokenResponse)
+def api_register(payload: RegisterRequest):
+    user_id = create_user(payload.username, payload.email, payload.password)
+    if user_id is None:
+        raise HTTPException(status_code=409, detail="Username or email already exists.")
+    token = create_token(user_id, payload.username, "user")
+    return TokenResponse(token=token, username=payload.username, role="user", user_id=user_id)
+
+
+@app.post("/api/auth/login", response_model=TokenResponse)
+def api_login(payload: LoginRequest):
+    user = authenticate_user(payload.username, payload.password)
+    if user is None:
+        raise HTTPException(status_code=401, detail="Invalid username or password.")
+    token = create_token(user["id"], user["username"], user["role"])
+    return TokenResponse(token=token, username=user["username"], role=user["role"], user_id=user["id"])
+
+
+@app.get("/api/auth/me")
+def api_get_me(user: dict = Depends(get_current_user)):
+    return {"id": user["id"], "username": user["username"], "role": user["role"]}
+
+
+# ---------------------------------------------------------------------------
+# Scan Endpoints (with optional logging for authenticated users)
+# ---------------------------------------------------------------------------
+
+def _optional_user(authorization: Optional[str] = Header(None)) -> Optional[dict]:
+    """Return user dict if token present and valid, else None (allows anonymous scans)."""
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+    try:
+        from backend.app.auth import decode_token
+        payload = decode_token(authorization.split(" ", 1)[1])
+        return {"id": payload["sub"], "username": payload["username"], "role": payload["role"]}
+    except Exception:
+        return None
+
+
+def _maybe_log_scan(user: Optional[dict], input_type: str, result):
+    if user:
+        log_scan(user["id"], input_type, result.risk_score, result.risk_level,
+                 result.scam_type or "", result.summary)
+
+
 @app.post("/api/analyze/text", response_model=ScamAnalysisResponse)
-def api_analyze_text(payload: TextAnalysisRequest):
+def api_analyze_text(payload: TextAnalysisRequest, user: Optional[dict] = Depends(_optional_user)):
     if not payload.text.strip():
         raise HTTPException(status_code=400, detail="Text cannot be empty.")
-    return analyze_text(payload.text)
+    result = analyze_text(payload.text)
+    _maybe_log_scan(user, "Text / SMS", result)
+    return result
+
 
 @app.post("/api/analyze/url", response_model=ScamAnalysisResponse)
-def api_analyze_url(payload: URLAnalysisRequest):
+def api_analyze_url(payload: URLAnalysisRequest, user: Optional[dict] = Depends(_optional_user)):
     if not payload.url.strip():
         raise HTTPException(status_code=400, detail="URL cannot be empty.")
-    return analyze_url(payload.url)
+    result = analyze_url(payload.url)
+    _maybe_log_scan(user, "URL / Link", result)
+    return result
+
 
 @app.post("/api/analyze/screenshot", response_model=ScamAnalysisResponse)
-async def api_analyze_screenshot(file: UploadFile = File(...)):
+async def api_analyze_screenshot(file: UploadFile = File(...), user: Optional[dict] = Depends(_optional_user)):
     contents = await file.read()
     if not contents:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
-    return analyze_image_bytes(contents, file.filename or "screenshot.png")
+    result = analyze_image_bytes(contents, file.filename or "screenshot.png")
+    _maybe_log_scan(user, "Screenshot", result)
+    return result
+
 
 @app.post("/api/analyze/voice", response_model=ScamAnalysisResponse)
-async def api_analyze_voice(file: UploadFile = File(...)):
+async def api_analyze_voice(file: UploadFile = File(...), user: Optional[dict] = Depends(_optional_user)):
     contents = await file.read()
     if not contents:
         raise HTTPException(status_code=400, detail="Uploaded audio file is empty.")
-    return analyze_audio_bytes(contents, file.filename or "voice_recording.mp3")
+    result = analyze_audio_bytes(contents, file.filename or "voice_recording.mp3")
+    _maybe_log_scan(user, "Voice Audio", result)
+    return result
 
 @app.post("/api/chat/followup", response_model=ChatFollowupResponse)
 def api_chat_followup(payload: ChatFollowupRequest):
     if not payload.message.strip():
         raise HTTPException(status_code=400, detail="Message cannot be empty.")
     return chat_followup(payload.message, payload.scan_context, payload.chat_history)
+
+
+# ---------------------------------------------------------------------------
+# User Scan History
+# ---------------------------------------------------------------------------
+
+@app.get("/api/user/scans")
+def api_user_scans(user: dict = Depends(get_current_user)):
+    return get_user_scan_logs(user["id"])
+
+
+# ---------------------------------------------------------------------------
+# Admin Endpoints
+# ---------------------------------------------------------------------------
+
+@app.get("/api/admin/stats", response_model=AdminStatsResponse)
+def api_admin_stats(admin: dict = Depends(require_admin)):
+    return get_admin_stats()
+
+
+@app.get("/api/admin/users")
+def api_admin_users(admin: dict = Depends(require_admin)):
+    return get_all_users()
+
+
+@app.delete("/api/admin/users/{user_id}")
+def api_admin_delete_user(user_id: int, admin: dict = Depends(require_admin)):
+    if user_id == admin["id"]:
+        raise HTTPException(status_code=400, detail="Cannot delete your own account.")
+    if not delete_user(user_id):
+        raise HTTPException(status_code=404, detail="User not found.")
+    return {"detail": "User deleted."}
+
+
+@app.get("/api/admin/scans")
+def api_admin_scans(admin: dict = Depends(require_admin), limit: int = 100):
+    return get_all_scan_logs(limit)
+
 
 # Mount frontend directory
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -86,6 +204,14 @@ if FRONTEND_DIR.exists():
     @app.get("/")
     def serve_index():
         return FileResponse(FRONTEND_DIR / "index.html")
+
+    @app.get("/login")
+    def serve_login():
+        return FileResponse(FRONTEND_DIR / "login.html")
+
+    @app.get("/admin")
+    def serve_admin():
+        return FileResponse(FRONTEND_DIR / "admin.html")
 
 if __name__ == "__main__":
     import uvicorn

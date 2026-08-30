@@ -1,4 +1,78 @@
 // ============================================================
+// THEME TOGGLE (Light / Dark)
+// ============================================================
+const THEME_KEY = "scamshield_theme";
+
+function initTheme() {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === "light") {
+        document.documentElement.setAttribute("data-theme", "light");
+    }
+}
+
+function toggleTheme() {
+    const current = document.documentElement.getAttribute("data-theme");
+    const next = current === "light" ? "dark" : "light";
+    if (next === "light") {
+        document.documentElement.setAttribute("data-theme", "light");
+    } else {
+        document.documentElement.removeAttribute("data-theme");
+    }
+    localStorage.setItem(THEME_KEY, next);
+}
+
+// Apply saved theme immediately (before DOMContentLoaded)
+initTheme();
+
+// ============================================================
+// USER MENU (Login state / Logout)
+// ============================================================
+function getUserToken() {
+    return localStorage.getItem('scamshield_token');
+}
+
+function getLoggedUser() {
+    try {
+        return JSON.parse(localStorage.getItem('scamshield_user'));
+    } catch { return null; }
+}
+
+function renderUserMenu() {
+    const menu = document.getElementById('user-menu');
+    if (!menu) return;
+    const user = getLoggedUser();
+    const token = getUserToken();
+
+    if (user && token) {
+        let html = `<div class="user-menu-info">
+            <span class="user-menu-name">${user.username}</span>
+            <span class="user-menu-role">${user.role === 'admin' ? 'Admin' : 'User'}</span>
+        </div>`;
+        if (user.role === 'admin') {
+            html += `<a href="/admin" class="btn-link">Dashboard</a>`;
+        }
+        html += `<button class="btn-logout" onclick="logoutUser()">Logout</button>`;
+        menu.innerHTML = html;
+    } else {
+        menu.innerHTML = `<a href="/login" class="btn-link">Sign In</a>`;
+    }
+}
+
+function logoutUser() {
+    localStorage.removeItem('scamshield_token');
+    localStorage.removeItem('scamshield_user');
+    renderUserMenu();
+    window.location.href = '/login';
+}
+
+function authHeaders() {
+    const token = getUserToken();
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    return headers;
+}
+
+// ============================================================
 // LIVE COMMUNITY THREAT RADAR
 // ============================================================
 const THREAT_ALERTS = [
@@ -139,6 +213,44 @@ function handleVoiceSelected(event) {
     if (file) {
         selectedVoiceFile = file;
         document.getElementById('voice-upload-title').innerText = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+    }
+}
+
+// Clear / Refresh all inputs
+function clearActiveInput() {
+    // Clear text input
+    const textInput = document.getElementById('text-input');
+    if (textInput) textInput.value = '';
+
+    // Clear URL input
+    const urlInput = document.getElementById('url-input');
+    if (urlInput) urlInput.value = '';
+
+    // Reset file inputs
+    const screenshotFile = document.getElementById('screenshot-file');
+    if (screenshotFile) screenshotFile.value = '';
+    selectedImageFile = null;
+    const imgTitle = document.getElementById('image-upload-title');
+    if (imgTitle) imgTitle.innerText = 'Click or Drag & Drop screenshot';
+
+    const voiceFile = document.getElementById('voice-file');
+    if (voiceFile) voiceFile.value = '';
+    selectedVoiceFile = null;
+    const voiceTitle = document.getElementById('voice-upload-title');
+    if (voiceTitle) voiceTitle.innerText = 'Upload voice recording or audio message';
+
+    // Visual feedback: spin the refresh icon
+    const btn = document.getElementById('refresh-input-btn');
+    if (btn) {
+        const svg = btn.querySelector('svg');
+        if (svg) {
+            svg.style.transition = 'transform 0.5s ease';
+            svg.style.transform = 'rotate(-360deg)';
+            setTimeout(() => {
+                svg.style.transition = 'none';
+                svg.style.transform = 'rotate(0deg)';
+            }, 500);
+        }
     }
 }
 
@@ -448,9 +560,6 @@ function displayResults(data) {
 
     // 7. Save to history
     saveToHistory(data);
-
-    // 8. Show AI Copilot chat section
-    showCopilot();
 }
 
 // API Callers
@@ -466,7 +575,7 @@ async function submitTextAnalysis() {
     try {
         const response = await fetch('/api/analyze/text', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: authHeaders(),
             body: JSON.stringify({ text })
         });
         const data = await response.json();
@@ -491,7 +600,7 @@ async function submitUrlAnalysis() {
     try {
         const response = await fetch('/api/analyze/url', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: authHeaders(),
             body: JSON.stringify({ url })
         });
         const data = await response.json();
@@ -518,6 +627,7 @@ async function submitScreenshotAnalysis() {
 
         const response = await fetch('/api/analyze/screenshot', {
             method: 'POST',
+            headers: getUserToken() ? { 'Authorization': `Bearer ${getUserToken()}` } : {},
             body: formData
         });
         const data = await response.json();
@@ -544,6 +654,7 @@ async function submitVoiceAnalysis() {
 
         const response = await fetch('/api/analyze/voice', {
             method: 'POST',
+            headers: getUserToken() ? { 'Authorization': `Bearer ${getUserToken()}` } : {},
             body: formData
         });
         const data = await response.json();
@@ -666,7 +777,7 @@ async function sendChatMessage() {
     try {
         const response = await fetch('/api/chat/followup', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: authHeaders(),
             body: JSON.stringify({
                 message: message,
                 scan_context: scanContext,
@@ -727,6 +838,9 @@ document.addEventListener('DOMContentLoaded', () => {
     renderHistoryBar();
     initCyberTips();
     initDragDrop();
+    renderUserMenu();
+    // Copilot is always visible
+    copilotVisible = true;
     // Copilot input: send on Enter key
     const copilotInput = document.getElementById('copilot-input');
     if (copilotInput) {
