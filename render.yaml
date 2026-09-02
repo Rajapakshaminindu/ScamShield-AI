@@ -16,13 +16,20 @@ services:
       - key: PYTHON_VERSION
         value: 3.13.3
 
-      # Qwen API key — paste your DashScope key in the Render dashboard.
+      # OpenRouter API key — paste it in the Render dashboard.
       # Leave it blank and the app still runs in heuristic fallback mode.
+      # Variable names are legacy but the client is OpenAI-compatible.
       - key: DASHSCOPE_API_KEY
         sync: false
 
       - key: DASHSCOPE_BASE_URL
-        value: https://dashscope-intl.aliyuncs.com/compatible-mode/v1
+        value: https://openrouter.ai/api/v1
+
+      - key: QWEN_MODEL_NAME
+        value: liquid/lfm-2.5-2.6b:free
+
+      - key: QWEN_VL_MODEL_NAME
+        value: google/gemma-4-31b-it:free
 
       # Render generates a strong random secret so JWTs can't be forged
       # using the placeholder default committed in the public repo.
