@@ -2761,11 +2761,12 @@ html.intro-done .intro-overlay {
     animation: introChar 0.62s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
+/* The brand letters get their colour from an inline per-letter tint set in
+   app.js. A background-clip:text gradient cannot be used on this wrapper:
+   every letter is its own inline-block span, so the clipped gradient would
+   have no glyphs to paint and the whole name would render invisible. */
 .intro-title .intro-brand {
-    background: linear-gradient(120deg, #818CF8 10%, #22D3EE 55%, #34D399 95%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 18px rgba(79, 70, 229, 0.55));
 }
 
 @keyframes introChar {

@@ -85,18 +85,43 @@ function renderIntroTitle() {
     const titleEl = document.getElementById("intro-title");
     if (!titleEl) return;
 
+    const words = INTRO_TITLE.split(" ");
+    const brandTotal = words
+        .filter(w => INTRO_BRAND_WORDS.includes(w))
+        .reduce((n, w) => n + w.length, 0);
+
     let charIndex = 0;
-    const html = INTRO_TITLE.split(" ").map(word => {
+    let brandIndex = 0;
+
+    const html = words.map(word => {
         const isBrand = INTRO_BRAND_WORDS.includes(word);
         const chars = word.split("").map(ch => {
             const delay = INTRO_CHAR_START + charIndex * INTRO_CHAR_STEP;
             charIndex++;
-            return `<span class="intro-char" style="animation-delay:${delay}ms">${ch}</span>`;
+            // Brand letters are tinted one by one along the gradient ramp so
+            // "ScamShield AI" reads as a single flowing gradient.
+            const tint = isBrand
+                ? `color:${brandColorAt(brandIndex++ / Math.max(brandTotal - 1, 1))};`
+                : "";
+            return `<span class="intro-char" style="animation-delay:${delay}ms;${tint}">${ch}</span>`;
         }).join("");
         return `<span class="intro-word${isBrand ? " intro-brand" : ""}">${chars}</span>`;
     }).join(" ");   // real spaces so the headline stays selectable/readable
 
     titleEl.innerHTML = html;
+}
+
+// Indigo -> cyan -> emerald ramp used to tint the "ScamShield AI" letters
+const INTRO_BRAND_STOPS = [[129, 140, 248], [34, 211, 238], [52, 211, 153]];
+
+function brandColorAt(t) {
+    const segment = 1 / (INTRO_BRAND_STOPS.length - 1);
+    const i = Math.min(Math.floor(t / segment), INTRO_BRAND_STOPS.length - 2);
+    const local = (t - i * segment) / segment;
+    const from = INTRO_BRAND_STOPS[i];
+    const to = INTRO_BRAND_STOPS[i + 1];
+    const mixed = from.map((c, k) => Math.round(c + (to[k] - c) * local));
+    return `rgb(${mixed.join(", ")})`;
 }
 
 function startIntroStatusRotation() {
