@@ -1,7 +1,6 @@
 import os
 from pathlib import Path
-from typing import Optional
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Header
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -92,66 +91,53 @@ def api_get_me(user: dict = Depends(get_current_user)):
 
 
 # ---------------------------------------------------------------------------
-# Scan Endpoints (with optional logging for authenticated users)
+# Scan Endpoints — sign-in is mandatory, so every scan is attributed to a user
 # ---------------------------------------------------------------------------
 
-def _optional_user(authorization: Optional[str] = Header(None)) -> Optional[dict]:
-    """Return user dict if token present and valid, else None (allows anonymous scans)."""
-    if not authorization or not authorization.startswith("Bearer "):
-        return None
-    try:
-        from backend.app.auth import decode_token
-        payload = decode_token(authorization.split(" ", 1)[1])
-        return {"id": payload["sub"], "username": payload["username"], "role": payload["role"]}
-    except Exception:
-        return None
-
-
-def _maybe_log_scan(user: Optional[dict], input_type: str, result):
-    if user:
-        log_scan(user["id"], input_type, result.risk_score, result.risk_level,
-                 result.scam_type or "", result.summary)
+def _record_scan(user: dict, input_type: str, result):
+    log_scan(user["id"], input_type, result.risk_score, result.risk_level,
+             result.scam_type or "", result.summary)
 
 
 @app.post("/api/analyze/text", response_model=ScamAnalysisResponse)
-def api_analyze_text(payload: TextAnalysisRequest, user: Optional[dict] = Depends(_optional_user)):
+def api_analyze_text(payload: TextAnalysisRequest, user: dict = Depends(get_current_user)):
     if not payload.text.strip():
         raise HTTPException(status_code=400, detail="Text cannot be empty.")
     result = analyze_text(payload.text)
-    _maybe_log_scan(user, "Text / SMS", result)
+    _record_scan(user, "Text / SMS", result)
     return result
 
 
 @app.post("/api/analyze/url", response_model=ScamAnalysisResponse)
-def api_analyze_url(payload: URLAnalysisRequest, user: Optional[dict] = Depends(_optional_user)):
+def api_analyze_url(payload: URLAnalysisRequest, user: dict = Depends(get_current_user)):
     if not payload.url.strip():
         raise HTTPException(status_code=400, detail="URL cannot be empty.")
     result = analyze_url(payload.url)
-    _maybe_log_scan(user, "URL / Link", result)
+    _record_scan(user, "URL / Link", result)
     return result
 
 
 @app.post("/api/analyze/screenshot", response_model=ScamAnalysisResponse)
-async def api_analyze_screenshot(file: UploadFile = File(...), user: Optional[dict] = Depends(_optional_user)):
+async def api_analyze_screenshot(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
     contents = await file.read()
     if not contents:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
     result = analyze_image_bytes(contents, file.filename or "screenshot.png")
-    _maybe_log_scan(user, "Screenshot", result)
+    _record_scan(user, "Screenshot", result)
     return result
 
 
 @app.post("/api/analyze/voice", response_model=ScamAnalysisResponse)
-async def api_analyze_voice(file: UploadFile = File(...), user: Optional[dict] = Depends(_optional_user)):
+async def api_analyze_voice(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
     contents = await file.read()
     if not contents:
         raise HTTPException(status_code=400, detail="Uploaded audio file is empty.")
     result = analyze_audio_bytes(contents, file.filename or "voice_recording.mp3")
-    _maybe_log_scan(user, "Voice Audio", result)
+    _record_scan(user, "Voice Audio", result)
     return result
 
 @app.post("/api/chat/followup", response_model=ChatFollowupResponse)
-def api_chat_followup(payload: ChatFollowupRequest):
+def api_chat_followup(payload: ChatFollowupRequest, user: dict = Depends(get_current_user)):
     if not payload.message.strip():
         raise HTTPException(status_code=400, detail="Message cannot be empty.")
     return chat_followup(payload.message, payload.scan_context, payload.chat_history)

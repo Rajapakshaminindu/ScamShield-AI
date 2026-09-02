@@ -105,7 +105,6 @@
                     </button>
                 </form>
                 <div class="admin-hint-box">
-                    <p class="auth-hint">Default credentials: <code>admin</code> / <code>admin123</code></p>
                     <p class="admin-hint-note">Only authorized administrators should access this portal.</p>
                 </div>
             </div>
@@ -296,6 +295,15 @@
             if (user && user.role === 'admin') window.location.href = '/admin';
             else window.location.href = '/';
         } catch {}
+    }
+
+    // -----------------------------------------------------------------------
+    // ?mode=register opens the Register tab directly (used by the sign-in gate)
+    // -----------------------------------------------------------------------
+    const requestedMode = new URLSearchParams(window.location.search).get('mode');
+    if (requestedMode === 'register') {
+        const tab = document.querySelector('.auth-tab[data-panel="register-panel"]');
+        if (tab) switchAuthTab(tab);
     }
     </script>
 </body>

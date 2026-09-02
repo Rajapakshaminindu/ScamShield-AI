@@ -127,6 +127,16 @@
                     <p>Choose an input mode to scan suspicious content for financial fraud & phishing.</p>
                 </div>
 
+                <!-- Shown only while signed out; toggled by renderGateHint() -->
+                <div class="gate-hint" id="gate-hint" hidden>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                    <span>A free account is required to run a scan.</span>
+                    <button class="gate-hint-link" onclick="goToAuth('register')">Sign up</button>
+                </div>
+
                 <!-- Input Tabs -->
                 <div class="tabs">
                     <button class="tab-btn active" data-tab="text-tab">
@@ -455,6 +465,44 @@
         <footer class="app-footer">
             <p>ScamShield AI Platform • Built for AI Competition • Powered by Alibaba Cloud Model Studio (Qwen)</p>
         </footer>
+    </div>
+
+    <!-- ============================================================
+         Sign-in Gate — shown when a signed-out visitor tries to use a feature
+         ============================================================ -->
+    <div class="auth-gate" id="auth-gate" hidden>
+        <div class="auth-gate-backdrop" onclick="closeAuthGate()"></div>
+        <div class="auth-gate-card" role="dialog" aria-modal="true" aria-labelledby="auth-gate-title">
+            <button class="auth-gate-close" onclick="closeAuthGate()" aria-label="Close">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+
+            <div class="auth-gate-icon">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+            </div>
+
+            <h3 id="auth-gate-title">Sign in to continue</h3>
+            <p class="auth-gate-msg" id="auth-gate-msg">Create a free account to run threat analysis.</p>
+
+            <ul class="auth-gate-perks">
+                <li>Unlimited scans across text, screenshots, links &amp; voice</li>
+                <li>Your full scan history saved to your account</li>
+                <li>AI Copilot for personalised safety advice</li>
+            </ul>
+
+            <div class="auth-gate-actions">
+                <button class="btn btn-primary" onclick="goToAuth('register')">
+                    <span class="btn-text">Create free account</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                </button>
+                <button class="btn btn-gate-secondary" onclick="goToAuth('login')">I already have an account</button>
+            </div>
+
+            <p class="auth-gate-note" id="auth-gate-note">Takes 10 seconds — your typed message is saved and restored after you sign in.</p>
+        </div>
     </div>
 
     <script src="/static/app.js"></script>

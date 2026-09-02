@@ -213,6 +213,132 @@ function authHeaders() {
 }
 
 // ============================================================
+// SIGN-IN GATE
+// Every scan and the Copilot require an account. The backend enforces
+// this too (401), so this modal is UX, not the security boundary.
+// ============================================================
+const PENDING_INPUT_KEY = 'scamshield_pending_input';
+
+function isLoggedIn() {
+    return Boolean(getUserToken() && getLoggedUser());
+}
+
+/**
+ * Gate a feature behind sign-in. Returns true when the caller may proceed,
+ * otherwise opens the modal and returns false.
+ */
+function requireLogin(message) {
+    if (isLoggedIn()) return true;
+    openAuthGate(message);
+    return false;
+}
+
+function openAuthGate(message) {
+    const gate = document.getElementById('auth-gate');
+    if (!gate) return;
+    const msgEl = document.getElementById('auth-gate-msg');
+    if (msgEl && message) msgEl.textContent = message;
+    gate.hidden = false;
+    // Force a reflow so the entry animation runs every time it opens
+    void gate.offsetWidth;
+    gate.classList.add('open');
+    document.documentElement.classList.add('gate-open');
+    document.addEventListener('keydown', authGateKeyHandler);
+    const primary = gate.querySelector('.auth-gate-actions .btn-primary');
+    if (primary) primary.focus();
+}
+
+function closeAuthGate() {
+    const gate = document.getElementById('auth-gate');
+    if (!gate) return;
+    gate.classList.remove('open');
+    document.documentElement.classList.remove('gate-open');
+    document.removeEventListener('keydown', authGateKeyHandler);
+    setTimeout(() => { gate.hidden = true; }, 220);
+}
+
+function authGateKeyHandler(e) {
+    if (e.key === 'Escape') closeAuthGate();
+}
+
+/** Send the visitor to the login page, opening the requested panel. */
+function goToAuth(mode) {
+    savePendingInput();
+    window.location.href = mode === 'register' ? '/login?mode=register' : '/login';
+}
+
+/**
+ * Remember whatever the visitor had typed so signing in doesn't lose their
+ * work. File uploads can't be serialised, so only text fields are kept.
+ */
+function savePendingInput() {
+    try {
+        const activeTab = document.querySelector('.tab-btn.active');
+        const draft = {
+            tab: activeTab ? activeTab.getAttribute('data-tab') : 'text-tab',
+            text: (document.getElementById('text-input') || {}).value || '',
+            url: (document.getElementById('url-input') || {}).value || ''
+        };
+        if (draft.text.trim() || draft.url.trim()) {
+            localStorage.setItem(PENDING_INPUT_KEY, JSON.stringify(draft));
+        }
+    } catch (e) { /* storage full or blocked — nothing to restore, no harm */ }
+}
+
+/** Restore a saved draft after a successful sign-in. */
+function restorePendingInput() {
+    if (!isLoggedIn()) return;
+    let draft = null;
+    try {
+        const raw = localStorage.getItem(PENDING_INPUT_KEY);
+        if (!raw) return;
+        draft = JSON.parse(raw);
+        localStorage.removeItem(PENDING_INPUT_KEY);
+    } catch (e) { return; }
+    if (!draft) return;
+
+    const textInput = document.getElementById('text-input');
+    const urlInput = document.getElementById('url-input');
+    if (textInput && draft.text) textInput.value = draft.text;
+    if (urlInput && draft.url) urlInput.value = draft.url;
+
+    if (draft.tab) {
+        const btn = document.querySelector(`.tab-btn[data-tab="${draft.tab}"]`);
+        const panel = document.getElementById(draft.tab);
+        if (btn && panel) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            panel.classList.add('active');
+        }
+    }
+
+    const restored = draft.tab === 'url-tab' ? urlInput : textInput;
+    if (restored) {
+        restored.style.borderColor = 'var(--accent-emerald)';
+        setTimeout(() => { restored.style.borderColor = ''; }, 1200);
+    }
+}
+
+/**
+ * Handle a 401 from any API call: the token is missing or expired, so drop the
+ * stale session and ask the visitor to sign in again.
+ */
+function handleAuthExpired() {
+    localStorage.removeItem('scamshield_token');
+    localStorage.removeItem('scamshield_user');
+    renderUserMenu();
+    renderGateHint();
+    openAuthGate('Your session has expired. Please sign in again to keep scanning.');
+}
+
+/** Show or hide the "sign in required" notice above the input tabs. */
+function renderGateHint() {
+    const hint = document.getElementById('gate-hint');
+    if (hint) hint.hidden = isLoggedIn();
+}
+
+// ============================================================
 // LIVE COMMUNITY THREAT RADAR
 // ============================================================
 const THREAT_ALERTS = [
@@ -709,6 +835,7 @@ async function submitTextAnalysis() {
         alert('Please enter a message to analyze.');
         return;
     }
+    if (!requireLogin('Sign in to scan this message for scams.')) return;
 
     showLoading(true);
     currentScanMeta = { inputType: "Text / SMS", input: text, timestamp: new Date().toISOString() };
@@ -718,7 +845,9 @@ async function submitTextAnalysis() {
             headers: authHeaders(),
             body: JSON.stringify({ text })
         });
+        if (response.status === 401) { handleAuthExpired(); return; }
         const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || 'Analysis failed.');
         displayResults(data);
     } catch (err) {
         console.error(err);
@@ -734,6 +863,7 @@ async function submitUrlAnalysis() {
         alert('Please enter a URL to inspect.');
         return;
     }
+    if (!requireLogin('Sign in to inspect this link.')) return;
 
     showLoading(true);
     currentScanMeta = { inputType: "URL / Link", input: url, timestamp: new Date().toISOString() };
@@ -743,7 +873,9 @@ async function submitUrlAnalysis() {
             headers: authHeaders(),
             body: JSON.stringify({ url })
         });
+        if (response.status === 401) { handleAuthExpired(); return; }
         const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || 'Analysis failed.');
         displayResults(data);
     } catch (err) {
         console.error(err);
@@ -758,6 +890,7 @@ async function submitScreenshotAnalysis() {
         alert('Please select or drop a screenshot first.');
         return;
     }
+    if (!requireLogin('Sign in to run OCR and scan this screenshot.')) return;
 
     showLoading(true);
     currentScanMeta = { inputType: "Screenshot", input: selectedImageFile ? selectedImageFile.name : "", timestamp: new Date().toISOString() };
@@ -767,10 +900,12 @@ async function submitScreenshotAnalysis() {
 
         const response = await fetch('/api/analyze/screenshot', {
             method: 'POST',
-            headers: getUserToken() ? { 'Authorization': `Bearer ${getUserToken()}` } : {},
+            headers: { 'Authorization': `Bearer ${getUserToken()}` },
             body: formData
         });
+        if (response.status === 401) { handleAuthExpired(); return; }
         const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || 'Analysis failed.');
         displayResults(data);
     } catch (err) {
         console.error(err);
@@ -785,6 +920,7 @@ async function submitVoiceAnalysis() {
         alert('Please select an audio file first.');
         return;
     }
+    if (!requireLogin('Sign in to transcribe and scan this recording.')) return;
 
     showLoading(true);
     currentScanMeta = { inputType: "Voice Audio", input: selectedVoiceFile ? selectedVoiceFile.name : "", timestamp: new Date().toISOString() };
@@ -794,10 +930,12 @@ async function submitVoiceAnalysis() {
 
         const response = await fetch('/api/analyze/voice', {
             method: 'POST',
-            headers: getUserToken() ? { 'Authorization': `Bearer ${getUserToken()}` } : {},
+            headers: { 'Authorization': `Bearer ${getUserToken()}` },
             body: formData
         });
+        if (response.status === 401) { handleAuthExpired(); return; }
         const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || 'Analysis failed.');
         displayResults(data);
     } catch (err) {
         console.error(err);
@@ -895,6 +1033,8 @@ async function sendChatMessage() {
     const input = document.getElementById('copilot-input');
     const message = input.value.trim();
     if (!message) return;
+    // Gate before clearing the input so the question isn't lost
+    if (!requireLogin('Sign in to ask the AI Copilot about this scan.')) return;
 
     // Clear input and disable send while processing
     input.value = '';
@@ -924,8 +1064,14 @@ async function sendChatMessage() {
                 chat_history: chatHistory.slice(-10) // last 10 messages
             })
         });
-        const data = await response.json();
         if (typing) typing.style.display = 'none';
+        if (response.status === 401) {
+            input.disabled = false;
+            handleAuthExpired();
+            return;
+        }
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || 'Copilot request failed.');
         addChatBubble('assistant', data.reply || "I'm sorry, I couldn't generate a response. Please try again.");
         chatHistory.push({ role: 'assistant', content: data.reply });
     } catch (err) {
@@ -979,6 +1125,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initCyberTips();
     initDragDrop();
     renderUserMenu();
+    renderGateHint();
+    restorePendingInput();
     // Copilot is always visible
     copilotVisible = true;
     // Copilot input: send on Enter key

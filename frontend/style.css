@@ -2959,3 +2959,266 @@ html.intro-skipped .app-container.intro-reveal {
         animation: none;
     }
 }
+
+/* ============================================================
+   SIGN-IN GATE
+   Modal shown when a signed-out visitor tries to run a scan or
+   use the Copilot, plus the inline notice above the input tabs.
+   ============================================================ */
+html.gate-open {
+    overflow: hidden;
+}
+
+.auth-gate {
+    position: fixed;
+    inset: 0;
+    z-index: 9500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.auth-gate[hidden] {
+    display: none;
+}
+
+.auth-gate-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(3, 6, 15, 0.72);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.auth-gate.open .auth-gate-backdrop {
+    opacity: 1;
+}
+
+.auth-gate-card {
+    position: relative;
+    width: 100%;
+    max-width: 440px;
+    padding: 34px 30px 26px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 28px 70px rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    text-align: center;
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+    transition: opacity 0.28s ease, transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.auth-gate.open .auth-gate-card {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+/* Indigo glow along the top edge of the card */
+.auth-gate-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 12%;
+    right: 12%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+}
+
+.auth-gate-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.auth-gate-close:hover {
+    background: rgba(79, 70, 229, 0.08);
+    border-color: var(--border-color);
+    color: var(--text-main);
+}
+
+.auth-gate-icon {
+    display: grid;
+    place-items: center;
+    width: 62px;
+    height: 62px;
+    margin: 0 auto 18px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.18), rgba(6, 182, 212, 0.14));
+    border: 1px solid rgba(79, 70, 229, 0.4);
+    color: var(--accent-cyan);
+    box-shadow: 0 0 26px rgba(79, 70, 229, 0.3);
+}
+
+.auth-gate-card h3 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-main);
+    margin-bottom: 8px;
+}
+
+.auth-gate-msg {
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+}
+
+.auth-gate-perks {
+    list-style: none;
+    text-align: left;
+    margin: 0 auto 24px;
+    padding: 16px 18px;
+    background: rgba(11, 15, 25, 0.4);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+}
+
+.auth-gate-perks li {
+    position: relative;
+    padding-left: 26px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-muted);
+}
+
+.auth-gate-perks li + li {
+    margin-top: 10px;
+}
+
+/* Emerald tick rendered in CSS so no extra markup is needed per item */
+.auth-gate-perks li::before {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 4px;
+    width: 6px;
+    height: 11px;
+    border-right: 2px solid var(--accent-emerald);
+    border-bottom: 2px solid var(--accent-emerald);
+    transform: rotate(45deg);
+}
+
+.auth-gate-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.auth-gate-actions .btn {
+    width: 100%;
+    justify-content: center;
+}
+
+.btn-gate-secondary {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+}
+
+.btn-gate-secondary:hover {
+    background: rgba(79, 70, 229, 0.08);
+    border-color: var(--primary);
+    color: var(--text-main);
+}
+
+.auth-gate-note {
+    margin-top: 16px;
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: var(--text-muted);
+}
+
+/* Inline notice above the input tabs */
+.gate-hint {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 18px;
+    padding: 10px 14px;
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.28);
+    border-radius: var(--radius-md);
+    font-size: 12.5px;
+    color: var(--text-muted);
+}
+
+.gate-hint[hidden] {
+    display: none;
+}
+
+.gate-hint svg {
+    flex-shrink: 0;
+    color: var(--risk-medium, #F59E0B);
+}
+
+.gate-hint-link {
+    margin-left: auto;
+    background: transparent;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--accent-cyan);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.gate-hint-link:hover {
+    color: var(--text-main);
+}
+
+[data-theme="light"] .auth-gate-backdrop {
+    background: rgba(15, 23, 42, 0.42);
+}
+
+[data-theme="light"] .auth-gate-card {
+    box-shadow: 0 28px 70px rgba(15, 23, 42, 0.22);
+}
+
+[data-theme="light"] .auth-gate-perks {
+    background: rgba(79, 70, 229, 0.04);
+}
+
+@media (max-width: 480px) {
+    .auth-gate {
+        padding: 16px;
+    }
+    .auth-gate-card {
+        padding: 30px 20px 22px;
+    }
+    .auth-gate-card h3 {
+        font-size: 19px;
+    }
+    .gate-hint {
+        flex-wrap: wrap;
+    }
+    .gate-hint-link {
+        margin-left: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .auth-gate-backdrop,
+    .auth-gate-card {
+        transition: none;
+    }
+}
