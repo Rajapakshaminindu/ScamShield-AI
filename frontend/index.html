@@ -8,13 +8,59 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
+    <script>
+        // Decide before first paint whether the intro should play.
+        // It runs once per browser session so refreshes stay instant.
+        try {
+            if (sessionStorage.getItem('scamshield_intro_seen')) {
+                document.documentElement.classList.add('intro-skipped');
+            }
+        } catch (e) { /* storage blocked — intro just plays again */ }
+    </script>
 </head>
 <body>
+    <!-- ============================================================
+         Intro Splash Animation (plays once on landing, then reveals app)
+         Runs on pure CSS timing so it always clears itself even if JS fails.
+         ============================================================ -->
+    <div class="intro-overlay" id="intro-overlay" role="presentation">
+        <div class="intro-grid"></div>
+        <div class="intro-sweep"></div>
+
+        <div class="intro-content">
+            <div class="intro-shield">
+                <span class="intro-radar"></span>
+                <span class="intro-radar radar-late"></span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path class="shield-body" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path class="shield-check" d="m9 12 2 2 4-4"/>
+                </svg>
+            </div>
+
+            <h1 class="intro-title" id="intro-title" aria-label="Welcome to ScamShield AI">
+                <!-- Letters injected by JS for staggered reveal -->
+            </h1>
+
+            <p class="intro-tagline">
+                <span>Detect.</span><span>Explain.</span><span>Protect.</span>
+            </p>
+
+            <div class="intro-status">
+                <span class="intro-status-dot"></span>
+                <span class="intro-status-text" id="intro-status-text">Booting multi-modal threat engine</span>
+            </div>
+
+            <div class="intro-progress"><span class="intro-progress-fill"></span></div>
+        </div>
+
+        <button class="intro-skip" id="intro-skip" type="button">Skip intro →</button>
+    </div>
+
     <!-- Background glow effects -->
     <div class="bg-glow bg-glow-1"></div>
     <div class="bg-glow bg-glow-2"></div>
 
-    <div class="app-container">
+    <div class="app-container intro-reveal">
         <!-- Header -->
         <header class="app-header">
             <div class="brand">

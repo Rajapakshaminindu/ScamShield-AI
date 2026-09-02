@@ -1,0 +1,37 @@
+# Render Blueprint for ScamShield AI
+# Deploy: https://dashboard.render.com/blueprints -> New Blueprint Instance -> pick this repo.
+# Render reads this file and provisions the web service automatically.
+services:
+  - type: web
+    name: scamshield-ai
+    runtime: python
+    plan: free
+    region: singapore
+    branch: main
+    buildCommand: pip install --upgrade pip && pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      # Matches the local venv, so the dependency set is already proven to build.
+      - key: PYTHON_VERSION
+        value: 3.13.3
+
+      # Qwen API key — paste your DashScope key in the Render dashboard.
+      # Leave it blank and the app still runs in heuristic fallback mode.
+      - key: DASHSCOPE_API_KEY
+        sync: false
+
+      - key: DASHSCOPE_BASE_URL
+        value: https://dashscope-intl.aliyuncs.com/compatible-mode/v1
+
+      # Render generates a strong random secret so JWTs can't be forged
+      # using the placeholder default committed in the public repo.
+      - key: JWT_SECRET
+        generateValue: true
+
+      # Seeded admin account. Set a real password in the dashboard —
+      # without it the build falls back to the public default.
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false

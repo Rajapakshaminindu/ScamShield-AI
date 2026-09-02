@@ -71,13 +71,18 @@ def init_db():
         )
     """)
 
-    # Seed default admin (username: admin, password: admin123)
-    cur.execute("SELECT id FROM users WHERE username = ?", ("admin",))
+    # Seed default admin. Credentials come from the environment so a public
+    # deployment is never left on the well-known admin/admin123 pair.
+    admin_username = os.getenv("ADMIN_USERNAME", "admin")
+    admin_email = os.getenv("ADMIN_EMAIL", "admin@scamshield.ai")
+    admin_password = os.getenv("ADMIN_PASSWORD", "admin123")
+
+    cur.execute("SELECT id FROM users WHERE username = ?", (admin_username,))
     if not cur.fetchone():
         now = datetime.now(timezone.utc).isoformat()
         cur.execute(
             "INSERT INTO users (username, email, password, role, created_at) VALUES (?, ?, ?, ?, ?)",
-            ("admin", "admin@scamshield.ai", hash_password("admin123"), "admin", now)
+            (admin_username, admin_email, hash_password(admin_password), "admin", now)
         )
 
     conn.commit()

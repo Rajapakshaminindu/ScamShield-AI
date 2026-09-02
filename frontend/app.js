@@ -25,6 +25,121 @@ function toggleTheme() {
 initTheme();
 
 // ============================================================
+// INTRO SPLASH ANIMATION
+// Plays once per browser session, then reveals the dashboard.
+// The fade-out itself is driven by CSS keyframes; this only handles
+// the letter reveal, the rotating boot messages and skipping.
+// ============================================================
+const INTRO_SEEN_KEY = "scamshield_intro_seen";
+const INTRO_TITLE = "Welcome to ScamShield AI";
+const INTRO_BRAND_WORDS = ["ScamShield", "AI"];
+const INTRO_CHAR_START = 750;   // ms before the first letter appears
+const INTRO_CHAR_STEP = 45;     // ms between letters
+const INTRO_TOTAL = 3850;       // ms until the overlay is fully cleared
+const INTRO_STATUS_MESSAGES = [
+    "Booting multi-modal threat engine",
+    "Loading heuristic scam patterns",
+    "Linking Qwen AI reasoning layer",
+    "Shield active — you are protected"
+];
+
+let introStatusTimer = null;
+let introFinishTimer = null;
+
+function initIntro() {
+    const overlay = document.getElementById("intro-overlay");
+    if (!overlay) return;
+
+    const root = document.documentElement;
+
+    // The inline head script already flagged a repeat visit in this session
+    if (root.classList.contains("intro-skipped")) {
+        overlay.remove();
+        return;
+    }
+
+    try {
+        sessionStorage.setItem(INTRO_SEEN_KEY, "1");
+    } catch (e) {
+        /* private mode — intro simply replays next time */
+    }
+
+    root.classList.add("intro-active");  // lock scrolling while it plays
+    renderIntroTitle();
+    startIntroStatusRotation();
+
+    const skipBtn = document.getElementById("intro-skip");
+    if (skipBtn) {
+        skipBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            skipIntro();
+        });
+    }
+    overlay.addEventListener("click", skipIntro);
+    document.addEventListener("keydown", introKeyHandler);
+
+    introFinishTimer = setTimeout(() => finishIntro(overlay), INTRO_TOTAL);
+}
+
+function renderIntroTitle() {
+    const titleEl = document.getElementById("intro-title");
+    if (!titleEl) return;
+
+    let charIndex = 0;
+    const html = INTRO_TITLE.split(" ").map(word => {
+        const isBrand = INTRO_BRAND_WORDS.includes(word);
+        const chars = word.split("").map(ch => {
+            const delay = INTRO_CHAR_START + charIndex * INTRO_CHAR_STEP;
+            charIndex++;
+            return `<span class="intro-char" style="animation-delay:${delay}ms">${ch}</span>`;
+        }).join("");
+        return `<span class="intro-word${isBrand ? " intro-brand" : ""}">${chars}</span>`;
+    }).join(" ");   // real spaces so the headline stays selectable/readable
+
+    titleEl.innerHTML = html;
+}
+
+function startIntroStatusRotation() {
+    const statusEl = document.getElementById("intro-status-text");
+    if (!statusEl) return;
+
+    let i = 0;
+    introStatusTimer = setInterval(() => {
+        i++;
+        if (i >= INTRO_STATUS_MESSAGES.length) {
+            clearInterval(introStatusTimer);
+            introStatusTimer = null;
+            return;
+        }
+        statusEl.textContent = INTRO_STATUS_MESSAGES[i];
+    }, 700);
+}
+
+function introKeyHandler(e) {
+    if (e.key === "Escape" || e.key === "Enter" || e.key === " ") {
+        skipIntro();
+    }
+}
+
+function skipIntro() {
+    const overlay = document.getElementById("intro-overlay");
+    if (!overlay) return;
+    document.documentElement.classList.add("intro-done");
+    if (introFinishTimer) clearTimeout(introFinishTimer);
+    introFinishTimer = setTimeout(() => finishIntro(overlay), 420);
+}
+
+function finishIntro(overlay) {
+    if (introStatusTimer) clearInterval(introStatusTimer);
+    document.removeEventListener("keydown", introKeyHandler);
+    document.documentElement.classList.remove("intro-active");
+    if (overlay && overlay.parentNode) overlay.remove();
+}
+
+// Start the intro as soon as the markup is parsed (script sits at end of body)
+initIntro();
+
+// ============================================================
 // USER MENU (Login state / Logout)
 // ============================================================
 function getUserToken() {

@@ -2580,3 +2580,381 @@ textarea:focus, .text-field:focus {
         grid-template-columns: 1fr;
     }
 }
+
+/* ============================================================
+   INTRO SPLASH ANIMATION
+   Timeline (total ~3.2s):
+     0.00s  shield draws in + radar rings pulse
+     0.75s  "Welcome to ScamShield AI" letters stagger in
+     1.60s  tagline words rise
+     1.95s  boot status line + progress bar fill
+     2.95s  overlay zooms out & fades, app content rises in
+   The outro runs on a CSS keyframe (not a JS timer) so the overlay
+   always clears itself even if app.js fails to load.
+   ============================================================ */
+
+html.intro-active,
+html.intro-active body {
+    overflow: hidden;
+}
+
+.intro-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 50% 42%, rgba(79, 70, 229, 0.28), transparent 55%),
+        radial-gradient(circle at 15% 90%, rgba(6, 182, 212, 0.18), transparent 50%),
+        #070A12;
+    animation: introOutro 0.85s cubic-bezier(0.65, 0, 0.35, 1) 2.95s forwards;
+    will-change: opacity, transform, filter;
+}
+
+/* Skipping fast-forwards straight to the cleared state.
+   Uses its own keyframe name so the animation restarts cleanly mid-flight. */
+html.intro-done .intro-overlay {
+    animation: introSkipOut 0.4s cubic-bezier(0.65, 0, 0.35, 1) 0s forwards;
+}
+
+@keyframes introOutro {
+    0%   { opacity: 1; transform: scale(1);    filter: blur(0);    visibility: visible; }
+    99%  { opacity: 0; transform: scale(1.12); filter: blur(14px); visibility: visible; }
+    100% { opacity: 0; transform: scale(1.12); filter: blur(14px); visibility: hidden; pointer-events: none; }
+}
+
+@keyframes introSkipOut {
+    0%   { opacity: 1; transform: scale(1);    filter: blur(0);    visibility: visible; }
+    99%  { opacity: 0; transform: scale(1.08); filter: blur(10px); visibility: visible; }
+    100% { opacity: 0; transform: scale(1.08); filter: blur(10px); visibility: hidden; pointer-events: none; }
+}
+
+/* Animated cyber grid backdrop */
+.intro-grid {
+    position: absolute;
+    inset: -50%;
+    background-image:
+        linear-gradient(rgba(99, 102, 241, 0.12) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99, 102, 241, 0.12) 1px, transparent 1px);
+    background-size: 46px 46px;
+    -webkit-mask-image: radial-gradient(circle at center, #000 12%, transparent 62%);
+    mask-image: radial-gradient(circle at center, #000 12%, transparent 62%);
+    animation: introGridDrift 9s linear infinite;
+}
+
+@keyframes introGridDrift {
+    from { transform: translate3d(0, 0, 0); }
+    to   { transform: translate3d(46px, 46px, 0); }
+}
+
+/* Scanner sweep passing over the screen */
+.intro-sweep {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 180px;
+    background: linear-gradient(180deg, transparent, rgba(6, 182, 212, 0.16), transparent);
+    animation: introSweep 2.4s ease-in-out 0.2s 2;
+}
+
+@keyframes introSweep {
+    from { top: -180px; }
+    to   { top: 100%; }
+}
+
+.intro-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 0 24px;
+}
+
+/* Shield mark */
+.intro-shield {
+    position: relative;
+    width: 108px;
+    height: 108px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #A5B4FC;
+    margin-bottom: 30px;
+    animation: introShieldIn 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.intro-shield svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 0 22px rgba(99, 102, 241, 0.75));
+}
+
+@keyframes introShieldIn {
+    0%   { opacity: 0; transform: scale(0.55) translateY(18px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Stroke draw-on for the shield outline and the tick */
+.intro-shield .shield-body {
+    stroke-dasharray: 70;
+    stroke-dashoffset: 70;
+    animation: introDraw 1.1s ease-out 0.25s forwards;
+}
+
+.intro-shield .shield-check {
+    stroke: var(--accent-emerald);
+    stroke-width: 2.2;
+    stroke-dasharray: 12;
+    stroke-dashoffset: 12;
+    animation: introDraw 0.45s ease-out 1.15s forwards;
+}
+
+@keyframes introDraw {
+    to { stroke-dashoffset: 0; }
+}
+
+/* Expanding radar rings around the shield */
+.intro-radar {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1.5px solid rgba(129, 140, 248, 0.6);
+    opacity: 0;
+    animation: introRadar 2.2s ease-out 0.5s infinite;
+}
+
+.intro-radar.radar-late {
+    animation-delay: 1.4s;
+}
+
+@keyframes introRadar {
+    0%   { opacity: 0.85; transform: scale(0.8); }
+    100% { opacity: 0;    transform: scale(2.3); }
+}
+
+/* Headline: "Welcome to ScamShield AI" */
+.intro-title {
+    font-family: var(--font-main);
+    font-size: clamp(30px, 6.4vw, 62px);
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    line-height: 1.15;
+    color: #F8FAFC;
+    margin-bottom: 18px;
+    max-width: 15ch;
+}
+
+.intro-title .intro-word {
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.intro-title .intro-char {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(26px) rotateX(-70deg);
+    animation: introChar 0.62s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.intro-title .intro-brand {
+    background: linear-gradient(120deg, #818CF8 10%, #22D3EE 55%, #34D399 95%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+@keyframes introChar {
+    to { opacity: 1; transform: translateY(0) rotateX(0); }
+}
+
+/* Fallback if JS never injects the letters */
+.intro-title:empty::before {
+    content: "Welcome to ScamShield AI";
+    opacity: 0;
+    animation: introFadeUp 0.7s ease 0.75s forwards;
+}
+
+.intro-tagline {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: clamp(11px, 2.4vw, 14px);
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #93C5FD;
+    margin-bottom: 34px;
+}
+
+.intro-tagline span {
+    opacity: 0;
+    animation: introFadeUp 0.55s ease forwards;
+}
+
+.intro-tagline span:nth-child(1) { animation-delay: 1.60s; }
+.intro-tagline span:nth-child(2) { animation-delay: 1.74s; }
+.intro-tagline span:nth-child(3) { animation-delay: 1.88s; }
+
+@keyframes introFadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Boot status line */
+.intro-status {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: #94A3B8;
+    margin-bottom: 16px;
+    opacity: 0;
+    animation: introFadeUp 0.5s ease 1.95s forwards;
+}
+
+.intro-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent-emerald);
+    box-shadow: 0 0 10px var(--accent-emerald);
+    animation: introBlink 1s ease-in-out infinite;
+}
+
+@keyframes introBlink {
+    50% { opacity: 0.25; }
+}
+
+.intro-status-text::after {
+    content: "…";
+}
+
+.intro-progress {
+    width: min(280px, 68vw);
+    height: 3px;
+    border-radius: 99px;
+    background: rgba(148, 163, 184, 0.18);
+    overflow: hidden;
+    opacity: 0;
+    animation: introFadeUp 0.4s ease 1.95s forwards;
+}
+
+.intro-progress-fill {
+    display: block;
+    width: 0;
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, #4F46E5, #06B6D4, #10B981);
+    box-shadow: 0 0 12px rgba(6, 182, 212, 0.7);
+    animation: introProgress 1.05s cubic-bezier(0.4, 0, 0.2, 1) 2s forwards;
+}
+
+@keyframes introProgress {
+    to { width: 100%; }
+}
+
+.intro-skip {
+    position: absolute;
+    bottom: 34px;
+    right: 34px;
+    z-index: 3;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: #CBD5E1;
+    font-family: var(--font-main);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 99px;
+    cursor: pointer;
+    opacity: 0;
+    animation: introFadeUp 0.4s ease 1.2s forwards;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.intro-skip:hover {
+    background: rgba(79, 70, 229, 0.25);
+    border-color: var(--border-highlight);
+    color: #fff;
+}
+
+/* App content rises in as the overlay clears.
+   Scoped to .intro-reveal so other pages sharing .app-container
+   (login, admin) are never hidden by the delay. */
+.app-container.intro-reveal {
+    animation: introAppIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) 2.85s both;
+}
+
+@keyframes introAppIn {
+    from { opacity: 0; transform: translateY(24px) scale(0.985); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+html.intro-done .app-container.intro-reveal {
+    animation: introAppIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0s both;
+}
+
+/* Intro already seen this session — render the app with no delay */
+html.intro-skipped .intro-overlay {
+    display: none;
+}
+
+html.intro-skipped .app-container.intro-reveal {
+    animation: none;
+}
+
+@media (max-width: 560px) {
+    .intro-shield {
+        width: 84px;
+        height: 84px;
+        margin-bottom: 22px;
+    }
+    .intro-skip {
+        bottom: 22px;
+        right: 50%;
+        transform: translateX(50%);
+    }
+}
+
+/* Respect reduced-motion: show a still frame, then clear it quickly */
+@media (prefers-reduced-motion: reduce) {
+    .intro-overlay {
+        animation: introOutro 0.3s linear 0.9s forwards;
+    }
+    .intro-grid,
+    .intro-sweep,
+    .intro-radar {
+        animation: none;
+    }
+    .intro-title .intro-char,
+    .intro-tagline span,
+    .intro-status,
+    .intro-progress,
+    .intro-skip {
+        opacity: 1;
+        transform: none;
+        animation: none;
+    }
+    .intro-shield,
+    .intro-shield .shield-body,
+    .intro-shield .shield-check {
+        opacity: 1;
+        stroke-dashoffset: 0;
+        animation: none;
+    }
+    .intro-progress-fill {
+        width: 100%;
+        animation: none;
+    }
+    .app-container.intro-reveal {
+        animation: none;
+    }
+}
