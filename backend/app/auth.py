@@ -14,19 +14,32 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 # ---------------------------------------------------------------------------
-# Config
+# Config & Environment Loading
 # ---------------------------------------------------------------------------
+from dotenv import load_dotenv
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+DB_PATH = BASE_DIR / "backend" / "scamshield.db"
+
+def _load_env_files():
+    """Load .env from both repo root and backend/.env reliably."""
+    root_env = BASE_DIR / ".env"
+    backend_env = BASE_DIR / "backend" / ".env"
+    if root_env.exists():
+        load_dotenv(dotenv_path=root_env, override=False)
+    if backend_env.exists():
+        load_dotenv(dotenv_path=backend_env, override=False)
+    load_dotenv()
+
+_load_env_files()
+
 def _get_jwt_secret():
     """Read JWT_SECRET fresh from env each time to avoid reloader mismatch."""
-    from dotenv import load_dotenv
-    load_dotenv()
+    _load_env_files()
     return os.getenv("JWT_SECRET", "change-me-in-production-scamshield-2025")
 
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_HOURS = 24
-
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-DB_PATH = BASE_DIR / "backend" / "scamshield.db"
 
 security = HTTPBearer(auto_error=False)
 
@@ -42,7 +55,8 @@ def _get_conn() -> sqlite3.Connection:
 
 
 def init_db():
-    """Create tables if they don't exist and seed a default admin."""
+    """Create tables if they don't exist and synchronize the admin account."""
+    _load_env_files()
     conn = _get_conn()
     cur = conn.cursor()
 
@@ -71,18 +85,31 @@ def init_db():
         )
     """)
 
-    # Seed default admin. Credentials come from the environment so a public
-    # deployment is never left on the well-known admin/admin123 pair.
-    admin_username = os.getenv("ADMIN_USERNAME", "admin")
-    admin_email = os.getenv("ADMIN_EMAIL", "admin@scamshield.ai")
-    admin_password = os.getenv("ADMIN_PASSWORD", "admin123")
+    # Seed / sync admin credentials from environment
+    admin_username = (os.getenv("ADMIN_USERNAME", "admin") or "admin").strip()
+    admin_email = (os.getenv("ADMIN_EMAIL", "admin@scamshield.ai") or "admin@scamshield.ai").strip()
+    admin_password = (os.getenv("ADMIN_PASSWORD", "admin123") or "admin123").strip()
 
-    cur.execute("SELECT id FROM users WHERE username = ?", (admin_username,))
-    if not cur.fetchone():
-        now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(timezone.utc).isoformat()
+
+    # Check if an admin or user matching this username/email exists
+    cur.execute(
+        "SELECT id, username, email FROM users WHERE role = 'admin' OR username = ? COLLATE NOCASE OR email = ? COLLATE NOCASE ORDER BY (role = 'admin') DESC, id ASC",
+        (admin_username, admin_email)
+    )
+    admin_row = cur.fetchone()
+
+    if admin_row:
+        # Always update existing admin account to stay synchronized with environment settings
         cur.execute(
-            "INSERT INTO users (username, email, password, role, created_at) VALUES (?, ?, ?, ?, ?)",
-            (admin_username, admin_email, hash_password(admin_password), "admin", now)
+            "UPDATE users SET username = ?, email = ?, password = ?, role = 'admin' WHERE id = ?",
+            (admin_username, admin_email, hash_password(admin_password), admin_row["id"])
+        )
+    else:
+        # Insert initial admin account
+        cur.execute(
+            "INSERT INTO users (username, email, password, role, created_at) VALUES (?, ?, ?, 'admin', ?)",
+            (admin_username, admin_email, hash_password(admin_password), now)
         )
 
     conn.commit()
@@ -101,8 +128,12 @@ def hash_password(password: str, salt: str = None) -> str:
 
 
 def verify_password(password: str, stored: str) -> bool:
-    salt, hashed = stored.split("$", 1)
-    return hash_password(password, salt) == stored
+    try:
+        salt, hashed = stored.split("$", 1)
+        return hash_password(password, salt) == stored
+    except Exception:
+        return False
+
 
 
 # ---------------------------------------------------------------------------
@@ -175,15 +206,21 @@ def create_user(username: str, email: str, password: str, role: str = "user") ->
 
 
 def authenticate_user(username: str, password: str) -> Optional[dict]:
+    if not username or not password:
+        return None
+    identifier = username.strip()
     conn = _get_conn()
     cur = conn.cursor()
-    cur.execute("SELECT id, username, email, password, role FROM users WHERE username = ? OR email = ?",
-                (username, username))
+    cur.execute(
+        "SELECT id, username, email, password, role FROM users WHERE username = ? COLLATE NOCASE OR email = ? COLLATE NOCASE",
+        (identifier, identifier)
+    )
     row = cur.fetchone()
     conn.close()
     if row and verify_password(password, row["password"]):
         return {"id": row["id"], "username": row["username"], "email": row["email"], "role": row["role"]}
     return None
+
 
 
 def get_all_users() -> list:
