@@ -18,10 +18,10 @@ jobs:
     steps:
       - name: Ping /api/health
         run: |
-          echo "Pinging https://scamshield-ai.onrender.com/api/health ..."
+          echo "Pinging https://scamshield-ai-24t3.onrender.com/api/health ..."
           STATUS=$(curl --silent --output /dev/null --write-out "%{http_code}" \
                    --max-time 60 \
-                   https://scamshield-ai.onrender.com/api/health)
+                   https://scamshield-ai-24t3.onrender.com/api/health)
           echo "HTTP Status: $STATUS"
           if [ "$STATUS" -eq 200 ]; then
             echo "✅ ScamShield AI is awake and healthy!"

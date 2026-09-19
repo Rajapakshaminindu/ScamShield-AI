@@ -74,7 +74,7 @@ This repo ships a [`render.yaml`](render.yaml) blueprint, so Render provisions t
    | `ADMIN_USERNAME` | Your admin login name |
    | `ADMIN_PASSWORD` | **A strong password** — never leave this as the default |
 4. Wait for the first build (~3-4 min). Your public link appears at the top of the service page, e.g.
-   `https://scamshield-ai.onrender.com`
+   `https://scamshield-ai-24t3.onrender.com`
 
 **Free-tier notes**
 - The instance sleeps after 15 minutes of inactivity, so the first visit after a pause takes ~50 seconds to wake up. Warm it up before a demo.
