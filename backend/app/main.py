@@ -199,6 +199,10 @@ if FRONTEND_DIR.exists():
     def serve_admin():
         return FileResponse(FRONTEND_DIR / "admin.html")
 
+    @app.get("/ads.txt")
+    def serve_ads_txt():
+        return FileResponse(FRONTEND_DIR / "ads.txt", media_type="text/plain")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("backend.app.main:app", host=HOST, port=PORT, reload=True)
