@@ -1,0 +1,30 @@
+name: Keep Render Alive
+
+# Pings the /api/health endpoint every 12 minutes so the Render free-tier
+# instance never goes to sleep. This avoids the ~50-second cold-start delay.
+
+on:
+  schedule:
+    # Runs every 12 minutes, 24/7
+    - cron: "*/12 * * * *"
+  workflow_dispatch: # Allow manual trigger from the GitHub Actions tab
+
+jobs:
+  ping:
+    name: Ping ScamShield AI Health Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Ping /api/health
+        run: |
+          echo "Pinging https://scamshield-ai.onrender.com/api/health ..."
+          STATUS=$(curl --silent --output /dev/null --write-out "%{http_code}" \
+                   --max-time 60 \
+                   https://scamshield-ai.onrender.com/api/health)
+          echo "HTTP Status: $STATUS"
+          if [ "$STATUS" -eq 200 ]; then
+            echo "✅ ScamShield AI is awake and healthy!"
+          else
+            echo "⚠️  Unexpected status code: $STATUS"
+          fi
