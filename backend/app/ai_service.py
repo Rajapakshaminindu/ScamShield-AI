@@ -223,48 +223,36 @@ def analyze_url(url: str) -> ScamAnalysisResponse:
         return _attach_domain_spoof(result, url)
 
 def analyze_image_bytes(image_bytes: bytes, filename: str) -> ScamAnalysisResponse:
-    """Analyzes an image screenshot using Qwen-VL or smart simulated OCR."""
+    """Analyzes an image screenshot using the configured vision model."""
     client = get_ai_client()
+    if not client:
+        raise RuntimeError("Screenshot analysis is unavailable because no vision model is configured.")
+
     base64_image = base64.b64encode(image_bytes).decode("utf-8")
 
-    if client:
-        try:
-            response = client.chat.completions.create(
-                model=QWEN_VL_MODEL_NAME,
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": "Extract all text from this screenshot and analyze if it is a scam."},
-                            {
-                                "type": "image_url",
-                                "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}
-                            }
-                        ]
-                    }
-                ],
-                response_format={"type": "json_object"}
-            )
-            data = json.loads(response.choices[0].message.content)
-            return ScamAnalysisResponse(**data)
-        except Exception as e:
-            print(f"Error calling Qwen-VL: {e}. Using fallback image analysis.")
-
-    # Fallback simulation for image upload demo
-    sample_ocr = "Dear Customer, your Bank Account has been temporarily suspended due to KYC failure. Click http://bank-kyc-update.xyz to verify your identity and enter OTP immediately or your account will be permanently closed."
-    res = generate_fallback_analysis(sample_ocr, content_type="image")
-    res.extracted_text = f"[OCR Extracted from {filename}]:\n{sample_ocr}"
-    return res
-
-def analyze_audio_bytes(audio_bytes: bytes, filename: str) -> ScamAnalysisResponse:
-    """Analyzes audio / voice message recording for vishing."""
-    # Simulated voice transcription for demo
-    sample_transcription = "Hello, this is officer James from the National Tax Department. An arrest warrant has been issued in your name for unpaid tax liabilities. To stop legal enforcement, press 1 and transfer payment immediately."
-    res = generate_fallback_analysis(sample_transcription, content_type="voice")
-    res.extracted_text = f"[Voice-to-Text Transcription of {filename}]:\n\"{sample_transcription}\""
-    return res
-
+    try:
+        response = client.chat.completions.create(
+            model=QWEN_VL_MODEL_NAME,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "Extract all text from this screenshot and analyze if it is a scam."},
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}
+                        }
+                    ]
+                }
+            ],
+            response_format={"type": "json_object"}
+        )
+        data = json.loads(response.choices[0].message.content)
+        return ScamAnalysisResponse(**data)
+    except Exception as e:
+        print(f"Error calling vision model: {e}")
+        raise RuntimeError("Screenshot analysis could not be completed. Please try text analysis or try again later.") from e
 
 # ---------------------------------------------------------------------------
 # COPILOT SYSTEM PROMPTS

@@ -40,7 +40,7 @@ const INTRO_STATUS_MESSAGES = [
     "Booting multi-modal threat engine",
     "Loading heuristic scam patterns",
     "Linking Qwen AI reasoning layer",
-    "Shield active — you are protected"
+    "Safety guidance ready — review every result"
 ];
 
 let introStatusTimer = null;
@@ -339,7 +339,7 @@ function renderGateHint() {
 }
 
 // ============================================================
-// LIVE COMMUNITY THREAT RADAR
+// Illustrative scam-message examples (not live community alerts)
 // ============================================================
 const THREAT_ALERTS = [
     { icon: "\u{1F6A8}", label: "Electricity Bill Cutoff WhatsApp Scam", text: "Dear consumer, your electricity connection will be disconnected today at 6 PM due to pending bill. Pay immediately by clicking http://electricity-bill-pay.xyz and enter your card details to avoid disconnection." },
@@ -464,21 +464,12 @@ function loadPreset(key) {
 
 // File Selection Feedback
 let selectedImageFile = null;
-let selectedVoiceFile = null;
 
 function handleImageSelected(event) {
     const file = event.target.files[0];
     if (file) {
         selectedImageFile = file;
         document.getElementById('image-upload-title').innerText = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
-    }
-}
-
-function handleVoiceSelected(event) {
-    const file = event.target.files[0];
-    if (file) {
-        selectedVoiceFile = file;
-        document.getElementById('voice-upload-title').innerText = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
     }
 }
 
@@ -498,12 +489,6 @@ function clearActiveInput() {
     selectedImageFile = null;
     const imgTitle = document.getElementById('image-upload-title');
     if (imgTitle) imgTitle.innerText = 'Click or Drag & Drop screenshot';
-
-    const voiceFile = document.getElementById('voice-file');
-    if (voiceFile) voiceFile.value = '';
-    selectedVoiceFile = null;
-    const voiceTitle = document.getElementById('voice-upload-title');
-    if (voiceTitle) voiceTitle.innerText = 'Upload voice recording or audio message';
 
     // Visual feedback: spin the refresh icon
     const btn = document.getElementById('refresh-input-btn');
@@ -890,7 +875,7 @@ async function submitScreenshotAnalysis() {
         alert('Please select or drop a screenshot first.');
         return;
     }
-    if (!requireLogin('Sign in to run OCR and scan this screenshot.')) return;
+    if (!requireLogin('Sign in to run screenshot analysis.')) return;
 
     showLoading(true);
     currentScanMeta = { inputType: "Screenshot", input: selectedImageFile ? selectedImageFile.name : "", timestamp: new Date().toISOString() };
@@ -910,36 +895,6 @@ async function submitScreenshotAnalysis() {
     } catch (err) {
         console.error(err);
         alert('Error analyzing screenshot: ' + err.message);
-    } finally {
-        showLoading(false);
-    }
-}
-
-async function submitVoiceAnalysis() {
-    if (!selectedVoiceFile) {
-        alert('Please select an audio file first.');
-        return;
-    }
-    if (!requireLogin('Sign in to transcribe and scan this recording.')) return;
-
-    showLoading(true);
-    currentScanMeta = { inputType: "Voice Audio", input: selectedVoiceFile ? selectedVoiceFile.name : "", timestamp: new Date().toISOString() };
-    try {
-        const formData = new FormData();
-        formData.append('file', selectedVoiceFile);
-
-        const response = await fetch('/api/analyze/voice', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${getUserToken()}` },
-            body: formData
-        });
-        if (response.status === 401) { handleAuthExpired(); return; }
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || 'Analysis failed.');
-        displayResults(data);
-    } catch (err) {
-        console.error(err);
-        alert('Error analyzing audio: ' + err.message);
     } finally {
         showLoading(false);
     }
@@ -1146,8 +1101,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================================
 function initDragDrop() {
     const zones = [
-        { el: document.getElementById('image-dropzone'), input: 'screenshot-file' },
-        { el: document.getElementById('voice-dropzone'), input: 'voice-file' }
+        { el: document.getElementById('image-dropzone'), input: 'screenshot-file' }
     ];
     zones.forEach(({ el, input }) => {
         if (!el) return;

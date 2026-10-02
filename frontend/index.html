@@ -4,13 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ScamShield AI — Detect. Explain. Protect.</title>
+    <meta name="description" content="Understand common online scams, learn practical steps to verify suspicious messages, and use ScamShield's analysis tools as one part of your safety checks.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
-    <!-- Google AdSense -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6413588375297263"
-         crossorigin="anonymous"></script>
     <script>
         // Decide before first paint whether the intro should play.
         // It runs once per browser session so refreshes stay instant.
@@ -100,10 +98,10 @@
             </div>
         </header>
 
-        <!-- Live Community Threat Radar Ticker -->
+        <!-- Sample messages are educational examples, not live reports. -->
         <div class="threat-ticker" id="threat-ticker">
             <div class="ticker-label">
-                <span class="pulse-dot"></span> <span class="ticker-live-badge">LIVE ALERT</span>
+                <span class="pulse-dot"></span> <span class="ticker-live-badge">SCAM EXAMPLES</span>
             </div>
             <div class="ticker-track-wrapper">
                 <div class="ticker-track" id="ticker-track">
@@ -118,7 +116,7 @@
             <section class="card input-card">
                 <div class="card-header">
                     <div class="card-header-row">
-                        <h2>Submit for AI Threat Analysis</h2>
+                        <h2>Check a suspicious message or link</h2>
                         <button class="btn-refresh" id="refresh-input-btn" onclick="clearActiveInput()" title="Clear all inputs">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <polyline points="1 4 1 10 7 10"/>
@@ -152,7 +150,7 @@
                         <span class="tab-icon">🔗</span> URL / Link
                     </button>
                     <button class="tab-btn" data-tab="voice-tab">
-                        <span class="tab-icon">🎙️</span> Voice Audio
+                        <span class="tab-icon">🎙️</span> Audio (unavailable)
                     </button>
                 </div>
 
@@ -183,10 +181,10 @@
                         <input type="file" id="screenshot-file" accept="image/*" style="display:none" onchange="handleImageSelected(event)">
                         <div class="upload-icon">📸</div>
                         <p class="upload-title" id="image-upload-title">Click or Drag & Drop screenshot</p>
-                        <p class="upload-subtitle">Supports PNG, JPG, JPEG (SMS, WhatsApp, Email captures)</p>
+                        <p class="upload-subtitle">Supports PNG and JPG screenshots. Screenshot analysis requires a configured vision model.</p>
                     </div>
                     <button class="btn btn-primary" id="analyze-screenshot-btn" onclick="submitScreenshotAnalysis()">
-                        <span class="btn-text">Extract OCR & Analyze</span>
+                        <span class="btn-text">Analyze Screenshot</span>
                     </button>
                 </div>
 
@@ -201,15 +199,10 @@
 
                 <!-- Tab 4: Voice Input -->
                 <div class="tab-content" id="voice-tab">
-                    <div class="upload-zone" id="voice-dropzone" onclick="document.getElementById('voice-file').click()">
-                        <input type="file" id="voice-file" accept="audio/*" style="display:none" onchange="handleVoiceSelected(event)">
-                        <div class="upload-icon">🎙️</div>
-                        <p class="upload-title" id="voice-upload-title">Upload voice recording or audio message</p>
-                        <p class="upload-subtitle">Supports MP3, WAV, M4A, OGG for Voice Phishing (Vishing) scan</p>
+                    <div class="media-unavailable">
+                        <h3>Audio analysis is not available yet</h3>
+                        <p>This version does not transcribe recordings. If you can safely obtain a transcript, use the Text / SMS tab instead. Do not upload sensitive recordings.</p>
                     </div>
-                    <button class="btn btn-primary" id="analyze-voice-btn" onclick="submitVoiceAnalysis()">
-                        <span class="btn-text">Transcribe & Detect Vishing</span>
-                    </button>
                 </div>
             </section>
 
@@ -218,8 +211,8 @@
                 <!-- Loading State -->
                 <div class="loading-overlay" id="loading-state" style="display: none;">
                     <div class="radar-spinner"></div>
-                    <h3>Qwen AI Deep Scanning in Progress...</h3>
-                    <p>Extracting intent, matching heuristics & evaluating social engineering tactics</p>
+                    <h3>Analysis in progress...</h3>
+                    <p>Checking this content with the configured rules and analysis services</p>
                 </div>
 
                 <!-- Default Empty State: Security Center Overview -->
@@ -236,8 +229,8 @@
                             <span class="pulse-ring"></span>
                         </div>
                         <div class="banner-text">
-                            <h3>Multi-Modal AI Engine Online & Ready</h3>
-                            <p>All detection systems operational. Submit content for instant threat analysis.</p>
+                            <h3>Scam analysis tools</h3>
+                            <p>Check text and links with automated signals. Screenshot analysis needs a configured vision model; review every result independently.</p>
                         </div>
                     </div>
 
@@ -249,7 +242,7 @@
                             </div>
                             <div class="step-number">01</div>
                             <h4>Smart Extraction</h4>
-                            <p>Accepts text, URLs, screenshots & voice audio. OCR and transcription extract content automatically.</p>
+                            <p>Submit text or a URL for analysis. Screenshots require a configured vision model. Audio transcription is not available.</p>
                         </div>
                         <div class="step-connector">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.3"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
@@ -260,7 +253,7 @@
                             </div>
                             <div class="step-number">02</div>
                             <h4>Heuristic & AI Reasoning</h4>
-                            <p>Regex rule engine + Qwen LLM evaluate urgency, spoofing, credential theft & social engineering.</p>
+                            <p>Pattern checks and, when configured, a language model look for urgency, impersonation and requests for sensitive data.</p>
                         </div>
                         <div class="step-connector">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.3"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
@@ -290,18 +283,18 @@
                     <div class="metrics-row">
                         <div class="metric-badge">
                             <span class="metric-icon">⚡</span>
-                            <span class="metric-value">&lt;500ms</span>
-                            <span class="metric-label">Avg. Latency</span>
+                            <span class="metric-value">3</span>
+                            <span class="metric-label">Input types</span>
                         </div>
                         <div class="metric-badge">
                             <span class="metric-icon">🎯</span>
-                            <span class="metric-value">99.4%</span>
-                            <span class="metric-label">Pattern Match</span>
+                            <span class="metric-value">AI + rules</span>
+                            <span class="metric-label">Analysis methods</span>
                         </div>
                         <div class="metric-badge">
                             <span class="metric-icon">🔒</span>
-                            <span class="metric-value">100%</span>
-                            <span class="metric-label">Privacy Protected</span>
+                            <span class="metric-value">Review</span>
+                            <span class="metric-label">Every result yourself</span>
                         </div>
                     </div>
                 </div>
@@ -464,9 +457,25 @@
             </div>
         </section>
 
+        <section class="card learn-promo" aria-labelledby="learn-promo-title">
+            <div>
+                <p class="learn-eyebrow">FREE SECURITY RESOURCE</p>
+                <h2 id="learn-promo-title">Learn how to spot a scam before you click</h2>
+                <p>Read practical guidance on suspicious messages, links, account recovery, and how this site's analysis works. You can read it without registering or submitting personal information.</p>
+            </div>
+            <a class="btn btn-primary learn-promo-link" href="/learn">Read the scam safety guides <span aria-hidden="true">→</span></a>
+        </section>
+
         <!-- Footer -->
         <footer class="app-footer">
-            <p>ScamShield AI Platform • Built for AI Competition • Powered by Alibaba Cloud Model Studio (Qwen)</p>
+            <p>ScamShield provides automated indicators for education and awareness. It can make mistakes and is not a substitute for checking with the relevant organization directly.</p>
+            <nav class="publisher-links" aria-label="Site information">
+                <a href="/learn">Safety guides</a>
+                <a href="/learn#about">About</a>
+                <a href="/learn#privacy">Privacy</a>
+                <a href="/learn#terms">Terms</a>
+                <a href="/learn#contact">Contact</a>
+            </nav>
         </footer>
     </div>
 
@@ -491,9 +500,9 @@
             <p class="auth-gate-msg" id="auth-gate-msg">Create a free account to run threat analysis.</p>
 
             <ul class="auth-gate-perks">
-                <li>Unlimited scans across text, screenshots, links &amp; voice</li>
+                <li>Analyze text and links; screenshot checks require a configured vision model</li>
                 <li>Your full scan history saved to your account</li>
-                <li>AI Copilot for personalised safety advice</li>
+                <li>Automated guidance with clear limitations and safety steps</li>
             </ul>
 
             <div class="auth-gate-actions">

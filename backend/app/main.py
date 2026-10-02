@@ -22,7 +22,6 @@ from backend.app.ai_service import (
     analyze_text,
     analyze_url,
     analyze_image_bytes,
-    analyze_audio_bytes,
     chat_followup
 )
 from backend.app.config import PORT, HOST
@@ -122,19 +121,20 @@ async def api_analyze_screenshot(file: UploadFile = File(...), user: dict = Depe
     contents = await file.read()
     if not contents:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
-    result = analyze_image_bytes(contents, file.filename or "screenshot.png")
+    try:
+        result = analyze_image_bytes(contents, file.filename or "screenshot.png")
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     _record_scan(user, "Screenshot", result)
     return result
 
 
 @app.post("/api/analyze/voice", response_model=ScamAnalysisResponse)
 async def api_analyze_voice(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
-    contents = await file.read()
-    if not contents:
-        raise HTTPException(status_code=400, detail="Uploaded audio file is empty.")
-    result = analyze_audio_bytes(contents, file.filename or "voice_recording.mp3")
-    _record_scan(user, "Voice Audio", result)
-    return result
+    raise HTTPException(
+        status_code=501,
+        detail="Audio transcription and analysis are not currently supported. If possible, submit a transcript using the text scanner.",
+    )
 
 @app.post("/api/chat/followup", response_model=ChatFollowupResponse)
 def api_chat_followup(payload: ChatFollowupRequest, user: dict = Depends(get_current_user)):
@@ -195,6 +195,10 @@ if FRONTEND_DIR.exists():
     def serve_login():
         return FileResponse(FRONTEND_DIR / "login.html")
 
+    @app.get("/learn")
+    def serve_learning_center():
+        return FileResponse(FRONTEND_DIR / "learn.html")
+
     @app.get("/admin")
     def serve_admin():
         return FileResponse(FRONTEND_DIR / "admin.html")
@@ -202,6 +206,14 @@ if FRONTEND_DIR.exists():
     @app.get("/ads.txt")
     def serve_ads_txt():
         return FileResponse(FRONTEND_DIR / "ads.txt", media_type="text/plain")
+
+    @app.get("/robots.txt")
+    def serve_robots_txt():
+        return FileResponse(FRONTEND_DIR / "robots.txt", media_type="text/plain")
+
+    @app.get("/sitemap.xml")
+    def serve_sitemap():
+        return FileResponse(FRONTEND_DIR / "sitemap.xml", media_type="application/xml")
 
 if __name__ == "__main__":
     import uvicorn
