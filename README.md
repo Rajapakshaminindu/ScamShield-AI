@@ -1,16 +1,27 @@
 # 🛡️ ScamShield AI
 > **Detect. Explain. Protect.**  
-> *An AI-powered Multimodal Platform that detects financial scams, explains the deceptive tactics, and guides users with actionable protection steps.*
+> *A scam-awareness platform with text and URL checks, practical safety guidance, and optional AI-assisted analysis.*
 
 ---
 
 ## 🌟 Key Capabilities
 - ✉️ **Text & SMS Analysis**: Detects psychological urgency, fear manipulation, fake lottery lures, and banking impersonations.
-- 🖼️ **Screenshot / Image OCR**: Extracts text from WhatsApp, SMS, and email screenshots and scans for visual and textual scam signals.
+- 🖼️ **Screenshot Analysis (optional)**: Requires a configured vision-model service. If one is unavailable, screenshot analysis returns an explicit unavailable message rather than a simulated result.
 - 🔗 **URL & Domain Intelligence**: Uncovers shortened links, spoofed banking domains, and high-risk TLDs.
-- 🎙️ **Voice / Audio Scam Scan**: Analyzes voice call recordings and audio clips for voice phishing (*vishing*).
-- 🧠 **Dual-Layer Intelligence**: Combines instant heuristic pattern checks with **Alibaba Cloud Model Studio (Qwen)** LLM reasoning.
+- 🎙️ **Audio Analysis**: Not currently supported. The UI explains this and the API rejects audio uploads rather than showing a fabricated transcript.
+- 🧠 **Optional AI Assistance**: Combines heuristic pattern checks with an optional OpenAI-compatible language-model provider, configured through environment variables.
 - 📊 **Explainable AI (XAI)**: Generates clear, consumer-friendly explanations showing *why* a message is dangerous along with concrete **Do's and Don'ts**.
+- 📚 **Public Learning Center**: Original scam-safety guidance, trusted resources, and the site's About, Privacy, Terms, and Contact information at `/learn`.
+
+> **Important:** Automated results can be incomplete or incorrect. Verify important requests directly with the relevant organization. Do not submit passwords, one-time codes, payment-card details, or private recovery links.
+
+## AdSense and Publisher Content
+
+The public learning center at [`/learn`](https://scamshield-ai-24t3.onrender.com/learn) is the site's primary editorial and publisher-information page. It is accessible without signing in and contains practical guides for checking suspicious messages and links, steps to take after a suspected scam, an explanation of the scanner's limitations, trusted external resources, and About, Privacy, Terms, and Contact sections.
+
+The AdSense loader is included on the public learning page only; it is intentionally omitted from the scanner, login, and private admin screens so ads are not placed on utility, navigation, or account-management surfaces. The scanner labels sample messages as examples and avoids unsupported accuracy, latency, and protection claims. `frontend/ads.txt` carries the publisher record, while `/robots.txt` and `/sitemap.xml` help crawlers discover public pages and avoid private/API routes.
+
+The site's existing Render deployment is [https://scamshield-ai-24t3.onrender.com](https://scamshield-ai-24t3.onrender.com). Public guides: [https://scamshield-ai-24t3.onrender.com/learn](https://scamshield-ai-24t3.onrender.com/learn). A code update does not guarantee AdSense approval; confirm the live deployment, publisher details, consent and privacy obligations for your visitors' locations, and Google's current policies before requesting review.
 
 ---
 
