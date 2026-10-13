@@ -57,6 +57,7 @@ TRUSTED_DOMAINS: Dict[str, str] = {
     "kotak": "kotak.com",
     "pnb": "pnbindia.in",
     "bob": "bankofbaroda.com",
+    "bankofbaroda": "bankofbaroda.com",
     "canara": "canarabank.com",
     "idbi": "idbibank.in",
     "yesbank": "yesbank.in",
@@ -83,6 +84,14 @@ TRUSTED_DOMAINS: Dict[str, str] = {
     "facebook": "facebook.com",
     "instagram": "instagram.com",
     "telegram": "telegram.org",
+}
+
+FINANCIAL_SPOOF_KEYWORDS = {
+    "bank", "banking", "netbanking", "online", "login", "portal", "verify",
+    "secure", "security", "update", "kyc", "alert", "support", "help", "pay",
+    "card", "service", "services", "india", "yono", "otp", "auth", "account",
+    "bonus", "reward", "cash", "app", "official", "check", "confirm", "claim",
+    "free", "gift", "baroda"
 }
 
 SUSPICIOUS_TLDS = [
@@ -208,6 +217,8 @@ def inspect_domain_spoof(url: str) -> Optional[DomainSpoofInfo]:
     """
     Inspects a URL to check if its domain is spoofing a known trusted brand.
     Returns DomainSpoofInfo if a brand match is found, otherwise None.
+    Uses token-boundary matching to prevent false positives on common words
+    (e.g., 'click.com', 'public.com', 'bobsburgers.com').
     """
     try:
         parsed = urlparse(url if url.startswith("http") else f"http://{url}")
@@ -218,6 +229,10 @@ def inspect_domain_spoof(url: str) -> Optional[DomainSpoofInfo]:
     if not full_domain:
         return None
 
+    # Strip port if present
+    if ":" in full_domain:
+        full_domain = full_domain.split(":")[0]
+
     # Strip www. prefix
     if full_domain.startswith("www."):
         full_domain = full_domain[4:]
@@ -227,10 +242,13 @@ def inspect_domain_spoof(url: str) -> Optional[DomainSpoofInfo]:
     # For multi-part TLDs like .co.in, .co.uk keep last 3 parts
     if len(parts) > 2 and parts[-2] in ("co", "com", "org", "net", "gov", "ac"):
         registered_domain = ".".join(parts[-3:])
+        tld_suffix = ".".join(parts[-2:])
     elif len(parts) >= 2:
         registered_domain = ".".join(parts[-2:])
+        tld_suffix = parts[-1]
     else:
         registered_domain = full_domain
+        tld_suffix = ""
 
     # Strip TLD to get the brand-like portion for matching
     # e.g. "hdfc-bank-verify.xyz" -> "hdfc-bank-verify"
@@ -239,19 +257,55 @@ def inspect_domain_spoof(url: str) -> Optional[DomainSpoofInfo]:
     # Split SLD into segments by hyphens
     sld_segments = sld.split("-")
 
+    # Non-TLD hostname for token analysis (e.g. "login.hdfc-bank-verify")
+    host_without_tld = full_domain
+    if tld_suffix and host_without_tld.endswith("." + tld_suffix):
+        host_without_tld = host_without_tld[:-len("." + tld_suffix)]
+
+    tokens = [t for t in re.split(r"[^a-z0-9]+", host_without_tld) if t]
+
     matched_brand = None
     matched_official = None
 
     for brand_key, official_domain in TRUSTED_DOMAINS.items():
-        # Check if the brand keyword appears anywhere in the full domain
-        if brand_key in full_domain.lower():
-            # But the domain must NOT be the actual official domain
-            if registered_domain != official_domain and full_domain != official_domain:
-                # Check if it's not a legitimate subdomain (e.g. "mail.google.com")
-                if not full_domain.endswith(f".{official_domain}"):
-                    matched_brand = brand_key
-                    matched_official = official_domain
+        # Legitimate official domain or official subdomain (e.g. "mail.google.com")
+        if registered_domain == official_domain or full_domain == official_domain:
+            continue
+        if full_domain.endswith(f".{official_domain}"):
+            continue
+        # State Bank of India official .sbi gTLD
+        if brand_key == "sbi" and (full_domain.endswith(".sbi") or full_domain == "sbi"):
+            continue
+
+        is_match = False
+        if brand_key == "bob":
+            # For Bank of Baroda acronym 'bob', require banking context to prevent false positives on general names
+            has_bob = ("bob" in tokens) or any(t.startswith("bob") and (t[3:] in FINANCIAL_SPOOF_KEYWORDS or t[3:].isdigit()) for t in tokens)
+            has_context = any(t in FINANCIAL_SPOOF_KEYWORDS for t in tokens)
+            if has_bob and has_context:
+                is_match = True
+        elif brand_key in tokens:
+            is_match = True
+        else:
+            for token in tokens:
+                if len(brand_key) >= 5 and brand_key in token:
+                    is_match = True
                     break
+                if token.startswith(brand_key):
+                    rem = token[len(brand_key):]
+                    if rem in FINANCIAL_SPOOF_KEYWORDS or rem.isdigit():
+                        is_match = True
+                        break
+                elif token.endswith(brand_key):
+                    rem = token[:-len(brand_key)]
+                    if rem in FINANCIAL_SPOOF_KEYWORDS or rem.isdigit():
+                        is_match = True
+                        break
+
+        if is_match:
+            matched_brand = brand_key
+            matched_official = official_domain
+            break
 
     if matched_brand is None:
         return None
@@ -261,7 +315,9 @@ def inspect_domain_spoof(url: str) -> Optional[DomainSpoofInfo]:
     for seg in sld_segments:
         if matched_brand in seg.lower():
             fake_elements.append(seg)
-        elif seg.lower() in ("verify", "secure", "update", "login", "kyc", "confirm", "account", "alert", "support", "help", "portal", "signin", "bank", "online", "net", "web"):
+        elif seg.lower() in FINANCIAL_SPOOF_KEYWORDS or seg.lower() in (
+            "signin", "net", "web"
+        ):
             fake_elements.append(seg)
 
     # If no specific fake elements found, mark all segments
