@@ -45,10 +45,23 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Enable CORS for cross-origin frontend requests
+# Configure CORS for cross-origin frontend requests
+raw_origins = os.getenv("ALLOWED_ORIGINS", "")
+if raw_origins.strip():
+    allowed_origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
+else:
+    allowed_origins = [
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "https://scamshield-ai-24t3.onrender.com",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
+    allow_origin_regex=os.getenv("ALLOWED_ORIGIN_REGEX", r"https?://(localhost|127\.0\.0\.1)(:\d+)?"),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

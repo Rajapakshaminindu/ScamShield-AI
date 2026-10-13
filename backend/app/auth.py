@@ -117,20 +117,50 @@ def init_db():
 
 
 # ---------------------------------------------------------------------------
-# Password hashing (SHA-256 + salt)
+# Password hashing (PBKDF2-HMAC-SHA256 + constant-time comparison)
 # ---------------------------------------------------------------------------
 
+PBKDF2_ITERATIONS = 100_000
+
 def hash_password(password: str, salt: str = None) -> str:
+    """
+    Hash a password using PBKDF2-HMAC-SHA256 with 100,000 iterations.
+    Format: pbkdf2:sha256:100000$<salt>$<hex_digest>
+    """
     if salt is None:
         salt = secrets.token_hex(16)
-    hashed = hashlib.sha256((salt + password).encode()).hexdigest()
-    return f"{salt}${hashed}"
+    derived = hashlib.pbkdf2_hmac(
+        "sha256",
+        password.encode("utf-8"),
+        salt.encode("utf-8"),
+        PBKDF2_ITERATIONS
+    )
+    return f"pbkdf2:sha256:{PBKDF2_ITERATIONS}${salt}${derived.hex()}"
 
 
 def verify_password(password: str, stored: str) -> bool:
+    """
+    Verify password against stored hash using constant-time comparison.
+    Supports both PBKDF2 and legacy sha256(<salt>+password) formats.
+    """
     try:
-        salt, hashed = stored.split("$", 1)
-        return hash_password(password, salt) == stored
+        if stored.startswith("pbkdf2:"):
+            # Format: pbkdf2:sha256:<iterations>$<salt>$<hex_digest>
+            algo_part, salt, hashed = stored.split("$", 2)
+            _, hash_name, iterations_str = algo_part.split(":")
+            iterations = int(iterations_str)
+            derived = hashlib.pbkdf2_hmac(
+                hash_name,
+                password.encode("utf-8"),
+                salt.encode("utf-8"),
+                iterations
+            )
+            return secrets.compare_digest(derived.hex(), hashed)
+        else:
+            # Legacy format: <salt>$<sha256_hex>
+            salt, hashed = stored.split("$", 1)
+            legacy_hash = hashlib.sha256((salt + password).encode("utf-8")).hexdigest()
+            return secrets.compare_digest(legacy_hash, hashed)
     except Exception:
         return False
 
