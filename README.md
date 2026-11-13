@@ -52,7 +52,7 @@ source venv/bin/activate
 pip install -r backend/requirements.txt
 ```
 
-### 3. Configure API Key (Optional)
+### 3. Configure API Key (Optional) **
 Copy `.env.example` to `.env` inside `backend/` or project root:
 ```bash
 cp backend/.env.example .env
