@@ -4,7 +4,7 @@
 
 ---
 
-## 🌟 Key Capabilities
+** 🌟 Key Capabilities
 - ✉️ **Text & SMS Analysis**: Detects psychological urgency, fear manipulation, fake lottery lures, and banking impersonations.
 - 🖼️ **Screenshot Analysis (optional)**: Requires a configured vision-model service. If one is unavailable, screenshot analysis returns an explicit unavailable message rather than a simulated result.
 - 🔗 **URL & Domain Intelligence**: Uncovers shortened links, spoofed banking domains, and high-risk TLDs.
