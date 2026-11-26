@@ -30,7 +30,6 @@ The site's existing Render deployment is [https://scamshield-ai-24t3.onrender.co
 - **Backend API**: Python 3.13 + FastAPI + Uvicorn + Pydantic
 - **Frontend Dashboard**: Responsive Single-Page Application (HTML5, Modern CSS3, Vanilla JavaScript)
 
----
 
 ## 🚀 Quick Start Guide
 
